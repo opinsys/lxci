@@ -42,12 +42,13 @@ def inspect(args):
 
 def main():
     args = parser.parse_args()
-    print(args)
     config.VERBOSE = args.verbose
 
 
     if args.list_archive:
-        print(" ".join(lxci.list_archived_containers()))
+        containers = lxci.list_archived_containers()
+        if (len(containers) > 0):
+            print(" ".join(containers))
         sys.exit(0)
 
     if args.inspect:
