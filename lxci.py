@@ -17,6 +17,25 @@ def list_base_containers():
 def list_runtime_containers():
     return lxc.list_containers(config_path=config.RUNTIME_CONFIG_PATH)
 
+def list_archived_containers():
+    containers = []
+    for name in lxc.list_containers(config_path=config.ARCHIVE_CONFIG_PATH):
+        container = RuntimeContainer(lxc.Container(name))
+        if container.is_archived():
+            containers.append(name)
+    return containers
+
+def clear_archive():
+    """
+    Destroy all stopped containers in archive
+    """
+    containers = lxc.list_containers(config_path=config.ARCHIVE_CONFIG_PATH)
+
+    with timer_print("Destroying {} archived containers".format(len(containers))):
+        for name in  containers:
+            container = lxc.Container(name)
+            if container.state == "STOPPED" and RuntimeContainer(container).is_archived():
+                container.destroy()
 
 def make_executable(filepath):
     """
@@ -25,18 +44,8 @@ def make_executable(filepath):
     st = os.stat(filepath)
     os.chmod(filepath, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-# def list_archived_containers():
-#     return lxc.list_containers(config_path=config.)
 
 
-# def list_archived_containers():
-# 
-#     res = []
-#     for name in lxc.list_containers(config_path=config.ARCHIVE_CONFIG_PATH):
-#         container = lxc.Container(name)
-#         vahh
-# 
-#     res
 
 
 class timer_print():
@@ -44,12 +53,14 @@ class timer_print():
     Measure how long it takes to run the with block
     """
     def __init__(self, msg):
-        print(msg + "... ", end="", flush=True)
+        if config.VERBOSE:
+            print(msg + "... ", end="", flush=True)
     def __enter__(self):
         self.started = time.time()
     def __exit__(self, type, value, traceback):
         took = time.time() - self.started
-        print("OK {}s".format(round(took, 2)), flush=True)
+        if config.VERBOSE:
+            print("OK {}s".format(round(took, 2)), flush=True)
 
 
 class RuntimeContainer():
@@ -57,6 +68,8 @@ class RuntimeContainer():
     def __init__(self, container):
         self.container = container
 
+    def get_name(self):
+        return self.container.name
 
     def start(self):
         """
@@ -86,6 +99,21 @@ class RuntimeContainer():
                 except Exception:
                     time.sleep(0.1)
 
+    def sync_workspace(self, source_dir):
+        workspace_dirpath = os.path.join(
+            self.container.get_config_item("lxc.rootfs"),
+            "home/lxci/workspace"
+        )
+        source_dir = os.path.realpath(source_dir) + "/"
+
+        with timer_print("Synchronizing {} to the container".format(source_dir)):
+            subprocess.check_call([
+                "rsync",
+                "-a",
+                source_dir,
+                workspace_dirpath
+            ])
+
     def run_command(self, command):
         """
         Run given command in the container using SSH
@@ -99,16 +127,19 @@ class RuntimeContainer():
             f.write("""
 #!/bin/sh
 set -eu
+sudo chown -R lxci:lxci /home/lxci/workspace
+cd /home/lxci/workspace
 {command}
 """.format(command=command))
         make_executable(command_filepath)
 
         cmd = subprocess.Popen([
             "ssh",
-            "-t",
-            "-oStrictHostKeyChecking=no",
-            "-i", config.SSH_KEY_PATH,
-            "-l", "lxci",
+            "-q", # Quiet mode
+            "-t", # Force pseudo-tty allocation
+            "-oStrictHostKeyChecking=no", # Skip the host key prompt
+            "-i", config.SSH_KEY_PATH, # Use our ssh key
+            "-l", "lxci", # Login as lxci user
             self.container.get_ips()[0],
             "/lxci_command.sh",
             ], pass_fds=os.pipe()
@@ -132,6 +163,12 @@ set -eu
             return json.load(f)
 
 
+    def get_archive_flag_path(self):
+        return os.path.join(
+            self.container.get_config_item("lxc.rootfs"),
+            "lxci_archived"
+        )
+
     def archive(self):
         """
         Archive the given container to ARCHIVE_CONFIG_PATH
@@ -140,6 +177,9 @@ set -eu
         archived_container = None
 
         with timer_print("Archiving the container"):
+            with open(self.get_archive_flag_path(), "w") as f:
+                f.write(datetime.datetime.now().isoformat())
+
             if config.RUNTIME_CONFIG_PATH == config.ARCHIVE_CONFIG_PATH:
                 archived_container = self.container
             else:
@@ -149,15 +189,14 @@ set -eu
                 )
                 self.container.destroy()
 
-            archive_flag_path = os.path.join(
-                archived_container.get_config_item("lxc.rootfs"),
-                "lxci_archived"
-            )
-            with open(archive_flag_path, "w") as f:
-                f.write(datetime.datetime.now().isoformat())
 
         return archived_container
 
+    def is_archived(self):
+        """
+        Return True if the container has been once archived
+        """
+        return os.path.exists(self.get_archive_flag_path())
 
     def stop(self):
         with timer_print("Stopping the container"):
@@ -187,27 +226,32 @@ def create_runtime_container(base_container_name, runtime_container_name):
     rootfs_path = container.get_config_item("lxc.rootfs")
     setup_sh_path = os.path.join(
         container.get_config_item("lxc.rootfs"),
-        "lxci_setup.sh"
+        "lxci_prepare.sh"
     )
 
     with open(setup_sh_path, "w") as f:
         f.write("""
 #!/bin/sh
-set -eu
+exec >> /var/log/lxci_prepare.log
+exec 2>&1
+set -eux
 adduser --system --shell /bin/bash --group lxci
 echo -n 'lxci:lxci' | chpasswd
 usermod -a -G sudo lxci
 echo "%lxci ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 mkdir /home/lxci/.ssh
+mkdir /home/lxci/workspace
     """)
 
     make_executable(setup_sh_path)
 
     res = None
     with timer_print("Preparing the container"):
-        res = container.start(False, False, False, ("/lxci_setup.sh",))
+        res = container.start(False, False, False, ("/lxci_prepare.sh",))
     if not res:
-        raise Exception("Failed to prepare the container")
+        raise Exception(
+            "Failed to prepare the container. Check {rootfs}/var/log/lxci_prepare.log".format(rootfs=rootfs_path)
+        )
 
     shutil.copyfile(
         config.SSH_PUB_KEY_PATH,

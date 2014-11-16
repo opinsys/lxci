@@ -15,3 +15,5 @@ SSH_PUB_KEY_PATH = os.path.join(
     "insecure_key.pub"
 )
 
+VERBOSE = False
+
