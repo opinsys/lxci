@@ -244,7 +244,7 @@ def create_runtime_container(base_container_name, runtime_container_name):
     Clone the base container and create lxci user for it
     """
 
-    base_container = lxc.Container(base_container_name)
+    base_container = lxc.Container(base_container_name, config_path=config.BASE_CONFIG_PATH)
     os.makedirs(config.RUNTIME_CONFIG_PATH, exist_ok=True)
 
     container = None
