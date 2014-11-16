@@ -62,6 +62,15 @@ class timer_print():
         if config.VERBOSE:
             print("OK {}s".format(round(took, 2)), flush=True)
 
+class RuntimeContainerError(Exception):
+    "RuntimeContainer Error"
+
+def assert_ret(val, msg=""):
+    """
+    Raise RuntimeContainerError if the return value is not true
+    """
+    if not val:
+        raise RuntimeContainerError(msg)
 
 class RuntimeContainer():
 
@@ -78,7 +87,7 @@ class RuntimeContainer():
 
         with timer_print("Waiting for the container to boot"):
             if self.container.state != "RUNNING":
-                self.container.start()
+                assert_ret(self.container.start(), "Failed to start the runtime container")
                 self.container.wait("RUNNING", 60)
 
         ips = tuple()
@@ -206,7 +215,8 @@ cd /home/lxci/workspace
                     self.container.name,
                     config_path=config.ARCHIVE_CONFIG_PATH
                 )
-                self.container.destroy()
+                assert_ret(archived_container, "Failed to archive the container")
+                assert_ret(self.container.destroy(), "Failed to destroy the runtime container after archiving")
 
 
         return archived_container
@@ -221,12 +231,12 @@ cd /home/lxci/workspace
         with timer_print("Stopping the container"):
             if self.container.state == "STOPPED":
                 return
-            self.container.stop()
+            assert_ret(self.container.stop(), "Failed to stop the container")
             self.container.wait("STOPPED", 60)
 
     def destroy(self):
         with timer_print("Destroying the container"):
-            self.container.destroy()
+            assert_ret(self.container.destroy())
 
 def create_runtime_container(base_container_name, runtime_container_name):
     """
@@ -241,6 +251,7 @@ def create_runtime_container(base_container_name, runtime_container_name):
             runtime_container_name,
             config_path=config.RUNTIME_CONFIG_PATH
         )
+        assert_ret(container, "Error while creating the runtime container")
 
     rootfs_path = container.get_config_item("lxc.rootfs")
     setup_sh_path = os.path.join(
