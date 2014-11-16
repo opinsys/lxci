@@ -23,7 +23,7 @@ parser.add_argument("-c", "--clear-archive", dest="clear_archive", action="store
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="Start bash in the archived container inspection")
 parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="Copy comma separated environment variables to the container")
 parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Can be set multiple times. Example FOO=bar")
-parser.add_argument("-v", "--vebose", dest="verbose", action="store_true", help="Be vebose")
+parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="Be verbose")
 
 def die(msg):
     print(msg, file=sys.stderr)
