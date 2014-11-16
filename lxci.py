@@ -99,9 +99,27 @@ class RuntimeContainer():
                 except Exception:
                     time.sleep(0.1)
 
+    def write_env(self, env):
+        """
+        Write environment variables from the dict env to /etc/environment in the container
+        """
+
+        env_filepath = os.path.join(
+            self.get_rootfs_path(),
+            "etc/environment"
+        )
+
+        with open(env_filepath, "a") as f:
+            for k, v in env.items():
+                f.write('\n{k}="{v}"'.format(k=k, v=v))
+
+
+    def get_rootfs_path(self):
+        return self.container.get_config_item("lxc.rootfs")
+
     def sync_workspace(self, source_dir):
         workspace_dirpath = os.path.join(
-            self.container.get_config_item("lxc.rootfs"),
+            self.get_rootfs_path(),
             "home/lxci/workspace"
         )
         source_dir = os.path.realpath(source_dir) + "/"
@@ -119,7 +137,7 @@ class RuntimeContainer():
         Run given command in the container using SSH
         """
         command_filepath = os.path.join(
-            self.container.get_config_item("lxc.rootfs"),
+            self.get_rootfs_path(),
             "lxci_command.sh"
         )
 
@@ -150,7 +168,7 @@ cd /home/lxci/workspace
 
     def get_metadata_filepath(self):
         return os.path.join(
-            self.container.get_config_item("lxc.rootfs"),
+            self.get_rootfs_path(),
             "lxci.json"
         )
 
@@ -165,7 +183,7 @@ cd /home/lxci/workspace
 
     def get_archive_flag_path(self):
         return os.path.join(
-            self.container.get_config_item("lxc.rootfs"),
+            self.get_rootfs_path(),
             "lxci_archived"
         )
 

@@ -21,6 +21,7 @@ parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="s
 parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="List archived containers")
 parser.add_argument("-c", "--clear-archive", dest="clear_archive", action="store_true", help="Clear all archived containers")
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="Start bash in the archived container inspection")
+parser.add_argument("-e", "--copy-env",  metavar="ENV", dest="env", help="Copy comma separated environment variables to the container")
 parser.add_argument("-v", "--vebose", dest="verbose", action="store_true", help="Be vebose")
 
 def die(msg):
@@ -90,6 +91,11 @@ def main():
                 )
 
     atexit.register(on_exit)
+
+    if args.env:
+        env_keys = args.env.split(",")
+        env = {k:v for k,v in os.environ.items() if k in env_keys}
+        runtime_container.write_env(env)
 
     if args.workspace_source_dir:
         runtime_container.sync_workspace(args.workspace_source_dir)
