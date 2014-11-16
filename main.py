@@ -43,7 +43,7 @@ def inspect(args):
 def main():
     args = parser.parse_args()
     config.VERBOSE = args.verbose
-
+    env = {}
 
     if args.list_archive:
         containers = lxci.list_archived_containers()
@@ -53,6 +53,17 @@ def main():
 
     if args.inspect:
         return inspect(args)
+
+    if args.copy_env:
+        env_keys = args.env.split(",")
+        env = env.merge({k:v for k,v in os.environ.items() if k in env_keys})
+
+    if args.set_env:
+        for pair in args.set_env:
+            if not "=" in pair:
+                die("Invalid --set-env value: {}".format(pair))
+            k, v = pair.split("=")
+            env[k] = v
 
     if args.clear_archive:
         lxci.clear_archive()
@@ -94,19 +105,10 @@ def main():
 
     atexit.register(on_exit)
 
-    if args.copy_env:
-        env_keys = args.env.split(",")
-        env = {k:v for k,v in os.environ.items() if k in env_keys}
+
+    if len(env) > 0:
         runtime_container.write_env(env)
 
-    if args.set_env:
-        env = {}
-        for pair in args.set_env:
-            if not "=" in pair:
-                die("Invalid set env value in {}".format(pair))
-            k, v = pair.split("=")
-            env[k] = v
-        runtime_container.write_env(env)
 
     if args.workspace_source_dir:
         runtime_container.sync_workspace(args.workspace_source_dir)
