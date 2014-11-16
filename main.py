@@ -21,7 +21,8 @@ parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="s
 parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="List archived containers")
 parser.add_argument("-c", "--clear-archive", dest="clear_archive", action="store_true", help="Clear all archived containers")
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="Start bash in the archived container inspection")
-parser.add_argument("-e", "--copy-env",  metavar="ENV", dest="env", help="Copy comma separated environment variables to the container")
+parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="Copy comma separated environment variables to the container")
+parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Can be set multiple times. Example FOO=bar")
 parser.add_argument("-v", "--vebose", dest="verbose", action="store_true", help="Be vebose")
 
 def die(msg):
@@ -39,11 +40,11 @@ def inspect(args):
 
 
 
-
-
 def main():
     args = parser.parse_args()
+    print(args)
     config.VERBOSE = args.verbose
+
 
     if args.list_archive:
         print(" ".join(lxci.list_archived_containers()))
@@ -92,9 +93,18 @@ def main():
 
     atexit.register(on_exit)
 
-    if args.env:
+    if args.copy_env:
         env_keys = args.env.split(",")
         env = {k:v for k,v in os.environ.items() if k in env_keys}
+        runtime_container.write_env(env)
+
+    if args.set_env:
+        env = {}
+        for pair in args.set_env:
+            if not "=" in pair:
+                die("Invalid set env value in {}".format(pair))
+            k, v = pair.split("=")
+            env[k] = v
         runtime_container.write_env(env)
 
     if args.workspace_source_dir:

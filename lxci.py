@@ -101,7 +101,7 @@ class RuntimeContainer():
 
     def write_env(self, env):
         """
-        Write environment variables from the dict env to /etc/environment in the container
+        Append environment variables from the dict env to /etc/environment in the container
         """
 
         env_filepath = os.path.join(
@@ -110,8 +110,9 @@ class RuntimeContainer():
         )
 
         with open(env_filepath, "a") as f:
+            f.write('\n')
             for k, v in env.items():
-                f.write('\n{k}="{v}"'.format(k=k, v=v))
+                f.write('{k}="{v}"\n'.format(k=k, v=v))
 
 
     def get_rootfs_path(self):
