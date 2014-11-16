@@ -211,6 +211,7 @@ cd /home/lxci/workspace
             if config.RUNTIME_CONFIG_PATH == config.ARCHIVE_CONFIG_PATH:
                 archived_container = self.container
             else:
+                os.makedirs(config.ARCHIVE_CONFIG_PATH, exist_ok=True)
                 archived_container = self.container.clone(
                     self.container.name,
                     config_path=config.ARCHIVE_CONFIG_PATH
