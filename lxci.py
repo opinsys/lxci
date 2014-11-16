@@ -245,6 +245,7 @@ def create_runtime_container(base_container_name, runtime_container_name):
     """
 
     base_container = lxc.Container(base_container_name)
+    os.makedirs(config.RUNTIME_CONFIG_PATH, exist_ok=True)
 
     container = None
     with timer_print("Cloning base container"):
