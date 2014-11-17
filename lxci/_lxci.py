@@ -9,7 +9,7 @@ import stat
 import subprocess
 import time
 
-import config
+from lxci import config
 
 def list_base_containers():
     return lxc.list_containers(config_path=config.BASE_CONFIG_PATH)
