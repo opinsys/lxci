@@ -248,7 +248,7 @@ def create_runtime_container(base_container_name, runtime_container_name):
     os.makedirs(config.RUNTIME_CONFIG_PATH, exist_ok=True)
 
     container = None
-    with timer_print("Cloning base container"):
+    with timer_print("Creating runtime container '{runtime}' from the '{base}' container".format(runtime=runtime_container_name, base=base_container_name)):
         container = base_container.clone(
             runtime_container_name,
             config_path=config.RUNTIME_CONFIG_PATH
