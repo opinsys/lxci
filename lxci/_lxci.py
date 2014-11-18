@@ -341,7 +341,7 @@ mkdir /home/lxci/workspace
         os.path.join(rootfs_path, "home/lxci/.ssh/authorized_keys")
     )
 
-    runtime_container =  RuntimeContainer(container, force=True)
+    runtime_container =  RuntimeContainer(container)
     runtime_container.add_meta({
         "base": base_container_name,
         "created": datetime.datetime.now().isoformat(),
