@@ -13,14 +13,14 @@ SCRIPT_NAME = os.path.basename(sys.argv[0])
 
 parser = argparse.ArgumentParser(description="Run command in a temporary LXC container")
 parser.add_argument("base_container", metavar="BASE_CONTAINER", nargs="?", help="Base container to use. Use lxc-ls to list available containers")
-parser.add_argument("command", metavar="COMMAND", default="bash", nargs="?", help="Command to run in the container. Defaults to bash")
+parser.add_argument("-c", "--command", metavar="COMMAND", default="bash", dest="command", help="Shell command to be executed in the container. If set to - the command will be read from the stdin. DEFAULT: bash")
 parser.add_argument("-n", "--name",  metavar="NAME", dest="name", help="Name for the temporary runtime container")
 parser.add_argument("-t", "--tag",  metavar="TAG", dest="tag", help="Add tag for the runtime container")
 parser.add_argument("-s", "--sync-workspace",  metavar="DIR", dest="workspace_source_dir", help="Synchronize DIR to the container")
 parser.add_argument("-A", "--archive", dest="archive", action="store_true", help="Archive container after running the command")
 parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="store_true", help="Archive container after running the command only if the command retuns with non zero exit status")
 parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="List archived containers")
-parser.add_argument("-c", "--clear-archive", dest="clear_archive", action="store_true", help="Clear all archived containers")
+parser.add_argument("-D", "--clear-archive", dest="clear_archive", action="store_true", help="Clear all archived containers")
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="Start bash in the archived container inspection")
 parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="Copy comma separated environment variables to the container")
 parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Can be set multiple times. Example FOO=bar")
@@ -45,6 +45,9 @@ def main():
     args = parser.parse_args()
     config.VERBOSE = args.verbose
     env = {}
+
+    if args.command == "-":
+        args.command = sys.stdin.read()
 
     if args.list_archive:
         containers = lxci.list_archived_containers()
