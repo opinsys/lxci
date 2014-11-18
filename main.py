@@ -5,6 +5,7 @@ import datetime
 import atexit
 import lxc
 import os
+import json
 
 import lxci
 from lxci import config, error_message, verbose_message
@@ -20,7 +21,9 @@ parser.add_argument("-s", "--sync-workspace",  metavar="DIR", dest="workspace_so
 parser.add_argument("-A", "--archive", dest="archive", action="store_true", help="archive the container after running the command")
 parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="store_true", help="archive the container only if the command returns with non zero exit status")
 parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="list archived containers. Combine --verbose to see tags")
+parser.add_argument("-m", "--info", metavar="NAME", dest="info", help="display meta data of an archived container")
 parser.add_argument("-D", "--destroy-archive", dest="destroy_archive", action="store_true", help="destroy all archived containers. Combine with --tag TAG to destroy only the containers with the TAG")
+parser.add_argument("-d", "--destroy-archive-on-success", dest="destroy_on_ok", action="store_true", help="destroy archived containers on success. If --tag is set only the containers with matching tags will bee destroyed")
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="start bash in the archived container for inspection")
 parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="copy comma separated environment variables to the container")
 parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Example FOO=bar")
@@ -42,13 +45,18 @@ def inspect(args):
     container.stop()
     sys.exit(cmd.returncode)
 
+def info(args):
+    if not args.info in lxci.list_archived_containers():
+        die("{} is not an archived container. See --list-archive".format(args.base_container))
+    c = lxci.RuntimeContainer(lxc.Container(args.info))
+    print(json.dumps(c.read_meta(), sort_keys=True, indent=4))
 
 def destroy_archive(args):
     containers = lxci.list_archived_containers(return_object=True)
 
     if args.tag:
         containers = [c for c in containers
-            if args.tag in c.read_metadata()["tags"]
+            if args.tag in c.get_tags()
         ]
         if len(containers) == 0:
             verbose_message("No containers matched with tag {}. Check -lv".format(args.tag))
@@ -65,9 +73,7 @@ def list_archive():
 
     for c in containers:
         if config.VERBOSE:
-            print("{name} tag: {tags}".format(
-                name=c.get_name(), tags=",".join(c.read_metadata()["tags"])
-            ))
+            print(c)
         else:
             print(c.get_name())
 
@@ -88,6 +94,9 @@ def main():
 
     if args.inspect:
         return inspect(args)
+
+    if args.info:
+        return info(args)
 
     if args.copy_env:
         env_keys = args.env.split(",")
@@ -118,11 +127,16 @@ def main():
     runtime_container = lxci.create_runtime_container(
         args.base_container, args.name
     )
+    runtime_container.add_meta({
+        "created": datetime.datetime.now().isoformat(),
+        "base": args.base_container,
+        "command": args.command,
+        "tags": (args.tag or "default").split(","),
+    })
 
-    cmd = None
+    did_fail = False
 
     def on_exit():
-        did_fail = cmd and cmd.returncode != 0
         archive = args.archive or (did_fail and args.archive_on_fail)
 
         if archive:
@@ -148,12 +162,17 @@ def main():
         runtime_container.sync_workspace(args.workspace_source_dir)
 
     runtime_container.start()
-    runtime_container.write_metadata({
-        "tags": (args.tag or "default").split(","),
-        "command": args.command
-    })
+    runtime_container.add_meta({ "started": datetime.datetime.now().isoformat() })
     cmd = runtime_container.run_command(args.command)
+    did_fail = cmd.returncode != 0
     runtime_container.stop()
+    runtime_container.add_meta({
+        "stopped": datetime.datetime.now().isoformat(),
+        "exit_code": cmd.returncode,
+    })
+    if not did_fail and args.destroy_on_ok:
+        destroy_archive(args)
+
     sys.exit(cmd.returncode)
 
 

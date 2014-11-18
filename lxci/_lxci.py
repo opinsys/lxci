@@ -85,6 +85,25 @@ class RuntimeContainer():
     def __init__(self, container):
         self.container = container
 
+    def __str__(self):
+        meta = self.read_meta()
+        return "{name} base={base} state={state} tag={tags} ".format(
+            name=self.get_name(),
+            state=self.container.state,
+            tags=",".join(meta.get("tags", [])),
+            base=meta.get("base")
+        )
+
+    def add_tags(self, tags):
+        meta = self.read_meta()
+        for t in tags:
+            if t not in meta["tags"]:
+                meta["tags"].append(t)
+
+    def get_tags(self):
+        return self.read_meta()["tags"]
+
+
     def get_name(self):
         return self.container.name
 
@@ -183,20 +202,35 @@ cd /home/lxci/workspace
         cmd.wait()
         return cmd
 
-    def get_metadata_filepath(self):
+    def get_meta_filepath(self):
         return os.path.join(
             self.get_rootfs_path(),
             "lxci.json"
         )
 
-    def write_metadata(self, meta):
-        with open(self.get_metadata_filepath(), "w") as f:
-            json.dump(meta, f)
+    def write_meta(self, meta):
+        with open(self.get_meta_filepath(), "w") as f:
+            json.dump(meta, f, sort_keys=True, indent=4)
 
-    def read_metadata(self):
-        with open(self.get_metadata_filepath(), "r") as f:
-            return json.load(f)
+    def read_meta(self):
+        """
+        Read meta data from the container
 
+        returns dict
+        """
+        try:
+            with open(self.get_meta_filepath(), "r") as f:
+                return json.load(f) or {}
+        except FileNotFoundError:
+            return {}
+
+    def add_meta(self, meta):
+        """
+        Merge dict into meta data
+        """
+        old = self.read_meta()
+        old.update(meta)
+        self.write_meta(old)
 
     def get_archive_flag_path(self):
         return os.path.join(
@@ -243,6 +277,9 @@ cd /home/lxci/workspace
             self.container.wait("STOPPED", 60)
 
     def destroy(self):
+        if self.container.state != "STOPPED":
+            error_message("Cannot destroy container {} since it's not stopped".format(self.get_name()))
+            return
         with timer_print("Destroying container {}".format(self.get_name())):
             assert_ret(self.container.destroy())
 
@@ -255,7 +292,7 @@ def create_runtime_container(base_container_name, runtime_container_name):
     os.makedirs(config.RUNTIME_CONFIG_PATH, exist_ok=True)
 
     container = None
-    with timer_print("Creating runtime container '{runtime}' from the '{base}' container".format(runtime=runtime_container_name, base=base_container_name)):
+    with timer_print("Creating container '{runtime}' from the '{base}' container".format(runtime=runtime_container_name, base=base_container_name)):
         container = base_container.clone(
             runtime_container_name,
             config_path=config.RUNTIME_CONFIG_PATH
