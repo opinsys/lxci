@@ -17,12 +17,15 @@ def list_base_containers():
 def list_runtime_containers():
     return lxc.list_containers(config_path=config.RUNTIME_CONFIG_PATH)
 
-def list_archived_containers():
+def list_archived_containers(return_object=False):
     containers = []
     for name in lxc.list_containers(config_path=config.ARCHIVE_CONFIG_PATH):
         container = RuntimeContainer(lxc.Container(name, config_path=config.ARCHIVE_CONFIG_PATH))
         if container.is_archived():
-            containers.append(name)
+            if return_object:
+                containers.append(container)
+            else:
+                containers.append(name)
     return containers
 
 def clear_archive():
@@ -236,7 +239,7 @@ cd /home/lxci/workspace
             self.container.wait("STOPPED", 60)
 
     def destroy(self):
-        with timer_print("Destroying the container"):
+        with timer_print("Destroying container {}".format(self.get_name())):
             assert_ret(self.container.destroy())
 
 def create_runtime_container(base_container_name, runtime_container_name):

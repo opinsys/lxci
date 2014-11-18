@@ -15,20 +15,28 @@ parser = argparse.ArgumentParser(description="Run command in a temporary LXC con
 parser.add_argument("base_container", metavar="BASE_CONTAINER", nargs="?", help="Base container to use. Use lxc-ls to list available containers")
 parser.add_argument("-c", "--command", metavar="COMMAND", default="bash", dest="command", help="Shell command to be executed in the container. If set to - the command will be read from the stdin. DEFAULT: bash")
 parser.add_argument("-n", "--name",  metavar="NAME", dest="name", help="Name for the temporary runtime container")
-parser.add_argument("-t", "--tag",  metavar="TAG", dest="tag", help="Add tag for the runtime container")
+parser.add_argument("-t", "--tag",  metavar="TAG", dest="tag", help="Tag container with TAG")
 parser.add_argument("-s", "--sync-workspace",  metavar="DIR", dest="workspace_source_dir", help="Synchronize DIR to the container")
 parser.add_argument("-A", "--archive", dest="archive", action="store_true", help="Archive container after running the command")
 parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="store_true", help="Archive container after running the command only if the command retuns with non zero exit status")
-parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="List archived containers")
-parser.add_argument("-D", "--clear-archive", dest="clear_archive", action="store_true", help="Clear all archived containers")
+parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="List archived containers. Add --verbose to see tags")
+parser.add_argument("-D", "--destroy-archive", dest="destroy_archive", action="store_true", help="Destroy all archived containers. Combine with --tag TAG to destroy only the containers with the TAG")
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="Start bash in the archived container inspection")
 parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="Copy comma separated environment variables to the container")
 parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Can be set multiple times. Example FOO=bar")
 parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="Be verbose")
 
-def die(msg):
-    print(msg, file=sys.stderr)
+def error_message(*a):
+    print(*a, file=sys.stderr)
+
+def verbose_message(*a):
+    if config.VERBOSE:
+        print(*a, file=sys.stderr)
+
+def die(*a):
+    error_message(*a)
     sys.exit(2)
+
 
 def inspect(args):
     if not args.inspect in lxci.list_base_containers():
@@ -40,6 +48,33 @@ def inspect(args):
     sys.exit(cmd.returncode)
 
 
+def destroy_archive(args):
+    containers = lxci.list_archived_containers(return_object=True)
+
+    if args.tag:
+        containers = [c for c in containers
+            if args.tag in c.read_metadata()["tags"]
+        ]
+        if len(containers) == 0:
+            verbose_message("No containers matched with tag {}. Check -lv".format(args.tag))
+            return
+
+    for c in containers:
+        c.destroy()
+
+def list_archive():
+    containers = lxci.list_archived_containers(return_object=True)
+    if (len(containers) == 0):
+        verbose_message("Archive is empty")
+        return
+
+    for c in containers:
+        if config.VERBOSE:
+            print("{name} tag: {tags}".format(
+                name=c.get_name(), tags=",".join(c.read_metadata()["tags"])
+            ))
+        else:
+            print(c.get_name())
 
 def main():
     args = parser.parse_args()
@@ -50,10 +85,7 @@ def main():
         args.command = sys.stdin.read()
 
     if args.list_archive:
-        containers = lxci.list_archived_containers()
-        if (len(containers) > 0):
-            print(" ".join(containers))
-        sys.exit(0)
+        return list_archive()
 
     if args.inspect:
         return inspect(args)
@@ -69,9 +101,8 @@ def main():
             k, v = pair.split("=")
             env[k] = v
 
-    if args.clear_archive:
-        lxci.clear_archive()
-        sys.exit(0)
+    if args.destroy_archive:
+        return destroy_archive(args)
 
     if not args.base_container:
         die("BASE_CONTAINER not defined. See --help")
