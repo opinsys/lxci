@@ -24,6 +24,7 @@ parser.add_argument("-D", "--destroy-archive", dest="destroy_archive", action="s
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="start bash in the archived container for inspection")
 parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="copy comma separated environment variables to the container")
 parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Example FOO=bar")
+parser.add_argument("-V", "--version", dest="version", action="store_true", help="print lxci version")
 parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="be verbose")
 
 def error_message(*a):
@@ -80,6 +81,10 @@ def main():
     args = parser.parse_args()
     config.VERBOSE = args.verbose
     env = {}
+
+    if args.version:
+        print(config.VERSION)
+        sys.exit(0)
 
     if args.command == "-":
         args.command = sys.stdin.read()
