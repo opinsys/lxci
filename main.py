@@ -16,7 +16,7 @@ parser.add_argument("base_container", metavar="BASE_CONTAINER", nargs="?", help=
 parser.add_argument("-c", "--command", metavar="COMMAND", default="bash", dest="command", help="Shell command to be executed in the container. If set to - the command will be read from the stdin. DEFAULT: bash")
 parser.add_argument("-n", "--name",  metavar="NAME", dest="name", help="Name for the temporary runtime container")
 parser.add_argument("-t", "--tag",  metavar="TAG", dest="tag", help="Tag container with TAG")
-parser.add_argument("-s", "--sync-workspace",  metavar="DIR", dest="workspace_source_dir", help="Synchronize DIR to the container")
+parser.add_argument("-s", "--sync-workspace",  metavar="DIR", dest="workspace_source_dir", help="Synchronize DIR to the container. The trailing slash works like in rsync. If it is present the contents of the DIR is synchronized to the current working directory command. If not the directory itself is synchronized.")
 parser.add_argument("-A", "--archive", dest="archive", action="store_true", help="Archive container after running the command")
 parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="store_true", help="Archive container after running the command only if the command retuns with non zero exit status")
 parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="List archived containers. Add --verbose to see tags")
@@ -131,7 +131,7 @@ def main():
         else:
             runtime_container.destroy()
         if did_fail:
-            print("Command failed with exit status {status}".format(status=cmd.returncode))
+            print("Command failed in the container with exit status {status}".format(status=cmd.returncode))
             if archive:
                 print(
                     "You may inspect what went wrong with {SCRIPT_NAME} --inspect {name}".format(

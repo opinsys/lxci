@@ -135,7 +135,6 @@ class RuntimeContainer():
             self.get_rootfs_path(),
             "home/lxci/workspace"
         )
-        source_dir = os.path.realpath(source_dir) + "/"
 
         with timer_print("Synchronizing {} to the container".format(source_dir)):
             subprocess.check_call([
