@@ -17,7 +17,7 @@ installdirs:
 
 install: installdirs
 	cp -a lxci $(DESTDIR)$(PYTHON_PATH_DIR)
-	cp -a bin/* $(DESTDIR)$(bindir)
+	cp -a main.py $(DESTDIR)$(bindir)/lxci
 
 
 test:
