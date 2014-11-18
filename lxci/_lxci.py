@@ -85,6 +85,8 @@ def assert_ret(val, msg=""):
 class RuntimeContainer():
 
     def __init__(self, container):
+        if isinstance(container, str):
+            raise TypeError("Expected container to be instance of lxc.Container not string")
         self.container = container
 
     def __str__(self):
