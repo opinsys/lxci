@@ -8,8 +8,30 @@ import socket
 import stat
 import subprocess
 import time
+import sys
 
 from lxci import config
+
+def error_message(*a):
+    print(*a, file=sys.stderr)
+
+def verbose_message(*a):
+    if config.VERBOSE:
+        print(*a, file=sys.stderr)
+
+class timer_print():
+    """
+    Measure how long it takes to run the with block
+    """
+    def __init__(self, msg):
+        if config.VERBOSE:
+            print(msg + "... ", end="", flush=True)
+    def __enter__(self):
+        self.started = time.time()
+    def __exit__(self, type, value, traceback):
+        took = time.time() - self.started
+        verbose_message("OK {}s".format(round(took, 2)))
+        sys.stdout.flush()
 
 def list_base_containers():
     return lxc.list_containers(config_path=config.BASE_CONFIG_PATH)
@@ -47,23 +69,6 @@ def make_executable(filepath):
     st = os.stat(filepath)
     os.chmod(filepath, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-
-
-
-
-class timer_print():
-    """
-    Measure how long it takes to run the with block
-    """
-    def __init__(self, msg):
-        if config.VERBOSE:
-            print(msg + "... ", end="", flush=True)
-    def __enter__(self):
-        self.started = time.time()
-    def __exit__(self, type, value, traceback):
-        took = time.time() - self.started
-        if config.VERBOSE:
-            print("OK {}s".format(round(took, 2)), flush=True)
 
 class RuntimeContainerError(Exception):
     "RuntimeContainer Error"

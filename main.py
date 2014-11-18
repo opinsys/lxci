@@ -7,7 +7,7 @@ import lxc
 import os
 
 import lxci
-from lxci import config
+from lxci import config, error_message, verbose_message
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 
@@ -27,12 +27,6 @@ parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env",
 parser.add_argument("-V", "--version", dest="version", action="store_true", help="print lxci version")
 parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="be verbose")
 
-def error_message(*a):
-    print(*a, file=sys.stderr)
-
-def verbose_message(*a):
-    if config.VERBOSE:
-        print(*a, file=sys.stderr)
 
 def die(*a):
     error_message(*a)
@@ -139,7 +133,7 @@ def main():
             print("Command failed in the container with exit status {status}".format(status=cmd.returncode))
             if archive:
                 print(
-                    "You may inspect what went wrong with {SCRIPT_NAME} --inspect {name}".format(
+                    "You may inspect what went wrong with: {SCRIPT_NAME} --inspect {name}".format(
                     SCRIPT_NAME=SCRIPT_NAME, name=runtime_container.get_name())
                 )
 
