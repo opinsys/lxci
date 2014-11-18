@@ -20,7 +20,7 @@ parser.add_argument("-t", "--tag",  metavar="TAG", dest="tag", help="tag contain
 parser.add_argument("-s", "--sync-workspace",  metavar="DIR", dest="workspace_source_dir", help="synchronize DIR to the container. The trailing slash works like in rsync. If it is present the contents of the DIR is synchronized to the current working directory command. If not the directory itself is synchronized.")
 parser.add_argument("-A", "--archive", dest="archive", action="store_true", help="archive the container after running the command")
 parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="store_true", help="archive the container only if the command returns with non zero exit status")
-parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="list archived containers. Combine --verbose to see tags")
+parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="list archived containers. Combine --verbose to see tags and filter list with --tag TAG")
 parser.add_argument("-m", "--info", metavar="NAME", dest="info", help="display meta data of an archived container")
 parser.add_argument("-D", "--destroy-archive", dest="destroy_archive", action="store_true", help="destroy all archived containers. Combine with --tag TAG to destroy only the containers with the TAG")
 parser.add_argument("-d", "--destroy-archive-on-success", dest="destroy_on_ok", action="store_true", help="destroy archived containers on success. If --tag is set only the containers with matching tags will bee destroyed")
@@ -52,21 +52,18 @@ def info(args):
     print(json.dumps(c.read_meta(), sort_keys=True, indent=4))
 
 def destroy_archive(args):
-    containers = lxci.list_archived_containers(return_object=True)
+    containers = lxci.list_archived_containers(return_object=True, tag=args.tag)
 
-    if args.tag:
-        containers = [c for c in containers
-            if args.tag in c.get_tags()
-        ]
-        if len(containers) == 0:
-            verbose_message("No containers matched with tag {}. Check -lv".format(args.tag))
-            return
+    if len(containers) == 0:
+        verbose_message("No containers matched with tag {}. Check -lv".format(args.tag))
+        return
 
     for c in containers:
         c.destroy()
 
-def list_archive():
-    containers = lxci.list_archived_containers(return_object=True)
+def list_archive(args):
+    containers = lxci.list_archived_containers(return_object=True, tag=args.tag)
+
     if (len(containers) == 0):
         verbose_message("Archive is empty")
         return
@@ -90,7 +87,7 @@ def main():
         args.command = sys.stdin.read()
 
     if args.list_archive:
-        return list_archive()
+        return list_archive(args)
 
     if args.inspect:
         return inspect(args)
@@ -128,8 +125,6 @@ def main():
         args.base_container, args.name
     )
     runtime_container.add_meta({
-        "created": datetime.datetime.now().isoformat(),
-        "base": args.base_container,
         "command": args.command,
         "tags": (args.tag or "default").split(","),
     })

@@ -39,10 +39,12 @@ def list_base_containers():
 def list_runtime_containers():
     return lxc.list_containers(config_path=config.RUNTIME_CONFIG_PATH)
 
-def list_archived_containers(return_object=False):
+def list_archived_containers(return_object=False, tag=None):
     containers = []
     for name in lxc.list_containers(config_path=config.ARCHIVE_CONFIG_PATH):
         container = RuntimeContainer(lxc.Container(name, config_path=config.ARCHIVE_CONFIG_PATH))
+        if tag and tag not in container.get_tags():
+            continue
         if container.is_archived():
             if return_object:
                 containers.append(container)
@@ -101,7 +103,7 @@ class RuntimeContainer():
                 meta["tags"].append(t)
 
     def get_tags(self):
-        return self.read_meta()["tags"]
+        return self.read_meta().get("tags", [])
 
 
     def get_name(self):
@@ -207,6 +209,9 @@ cd /home/lxci/workspace
             self.get_rootfs_path(),
             "lxci.json"
         )
+
+    def is_runtime_container(self):
+        return os.path.exists(self.get_meta_filepath())
 
     def write_meta(self, meta):
         with open(self.get_meta_filepath(), "w") as f:
@@ -334,5 +339,10 @@ mkdir /home/lxci/workspace
         os.path.join(rootfs_path, "home/lxci/.ssh/authorized_keys")
     )
 
-    return RuntimeContainer(container)
+    runtime_container =  RuntimeContainer(container, force=True)
+    runtime_container.add_meta({
+        "base": base_container_name,
+        "created": datetime.datetime.now().isoformat(),
+    })
+    return runtime_container
 
