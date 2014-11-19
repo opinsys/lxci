@@ -52,18 +52,6 @@ def list_archived_containers(return_object=False, tag=None):
                 containers.append(name)
     return containers
 
-def clear_archive():
-    """
-    Destroy all stopped containers in archive
-    """
-    containers = lxc.list_containers(config_path=config.ARCHIVE_CONFIG_PATH)
-
-    with timer_print("Destroying {} archived containers".format(len(containers))):
-        for name in  containers:
-            container = lxc.Container(name, config_path=config.ARCHIVE_CONFIG_PATH)
-            if container.state == "STOPPED" and RuntimeContainer(container).is_lxci_container():
-                assert_ret(container.destroy())
-
 def make_executable(filepath):
     """
     Like chmod +x filepath
