@@ -1,53 +1,68 @@
 
-```
-usage: lxci [-h] [-c COMMAND] [-n NAME] [-t TAG] [-s DIR] [-A] [-a] [-l]
-               [-m NAME] [-D] [-d] [-i NAME] [-E ENV] [-e [ENV [ENV ...]]]
-               [--print-config] [-V] [-v]
-               [BASE_CONTAINER]
+# lxCI
 
-Start temporary container based on an existing one
+Run commands in temporary containers
 
-positional arguments:
-  BASE_CONTAINER        base container to use. Use [sudo] lxc-ls to list
-                        available containers.
+    lxci trusty-amd64
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -c COMMAND, --command COMMAND
-                        shell command to be executed in the container. If set
-                        to - the command will be read from the stdin. DEFAULT:
-                        bash
-  -n NAME, --name NAME  custom name for the temporary runtime container
-  -t TAG, --tag TAG     tag container with TAG
-  -s DIR, --sync-workspace DIR
-                        synchronize DIR to the container. The trailing slash
-                        works like in rsync. If it is present the contents of
-                        the DIR is synchronized to the current working
-                        directory command. If not the directory itself is
-                        synchronized.
-  -A, --archive         archive the container after running the command
-  -a, --archive-on-fail
-                        archive the container only if the command returns with
-                        non zero exit status
-  -l, --list-archive    list archived containers. Combine --verbose to see
-                        tags and filter list with --tag TAG
-  -m NAME, --info NAME  display meta data of an archived container
-  -D, --destroy-archive
-                        destroy all archived containers. Combine with --tag
-                        TAG to destroy only the containers with the TAG
-  -d, --destroy-archive-on-success
-                        destroy archived containers on success. If --tag is
-                        set only the containers with matching tags will bee
-                        destroyed
-  -i NAME, --inspect NAME
-                        start bash in the archived container for inspection
-  -E ENV, --copy-env ENV
-                        copy comma separated environment variables to the
-                        container
-  -e [ENV [ENV ...]], --set-env [ENV [ENV ...]]
-                        Set environment variable for the container. Example
-                        FOO=bar
-  --print-config        print config
-  -V, --version         print lxci version
-  -v, --verbose         be verbose
-```
+This will do following
+
+1. Creates a new temporary container based on the existing `trusty-amd64` container
+  - Create it with `sudo lxc-create -t download -n trusty-amd64 -- --dist ubuntu --release trusty --arch amd64` and install openssh-server in it
+2. Adds user `lxci` to it
+3. Boots and waits for the network and ssh server to wake up in it
+4. Logins as the `lxci` user over ssh and starts `bash`
+5. After the bash command exists the container is destroyed
+
+> Add `-v` to see in details
+
+To execute custom command instead of bash use the `--command COMMAND`
+
+    lxci trusty-amd64 --command hostname
+
+To copy files to the container workspace use `--sync-workspace PATH`
+
+    lxci trusty-amd64 --command "ls -l" --sync-workspace .
+
+To archive the container on failures add `--archive-on-fail`
+
+    lxci trusty-amd64 --command "exit 2" --archive-on-fail
+
+The archived containers can be listed with `--list-archive`
+
+    lxci --list-archive
+
+To inspect the archived container use `--inspect`
+
+    lxci --inspect NAME
+
+> This will start an interactive shell session in it
+
+To list all other options use `--help`
+
+    lxci --help
+
+# Installation
+
+todo
+
+# Workflow with Continuous Integration Systems
+
+todo
+
+## Artifacts
+
+todo
+
+# Security
+
+Not.
+
+http://www.slideshare.net/jpetazzo/is-it-safe-to-run-applications-in-linux-containers
+
+# todo
+
+- --sudo
+- SUDO\_USER check
+- artifacts
+
