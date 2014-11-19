@@ -1,0 +1,14 @@
+Source: lxci
+Section: admin
+Priority: extra
+Maintainer: Esa-Matti Suuronen <esa-matti.suuronen@opinsys.fi>
+Build-Depends: debhelper (>= 8)
+Standards-Version: 3.9.3
+Homepage: https://github.com/opinsys/lxci
+
+Package: lxci
+Architecture: all
+Depends: ${misc:Depends}, lxc, python3-lxc, rsync
+Recommends: quilt
+Description: lxCI - run commands in temporary containers
+ A friend of your CI

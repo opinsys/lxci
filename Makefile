@@ -1,4 +1,4 @@
-prefix = /usr/local
+prefix ?= /usr/local
 exec_prefix = $(prefix)
 bindir = $(exec_prefix)/bin
 
@@ -23,4 +23,15 @@ install: installdirs
 test:
 
 clean:
+	find . -name '*.pyc' -delete
+	rm -rf lxci/__pycache__
+
+deb:
+	rm -rf debian
+	cp -a debian.default debian
+	dpkg-buildpackage -us -uc
+
+install-build-dep:
+	mk-build-deps --install debian.default/control \
+		--tool "apt-get --yes" --remove
 
