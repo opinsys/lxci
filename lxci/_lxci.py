@@ -260,7 +260,7 @@ cd /home/lxci/workspace
 
     def is_lxci_container(self):
         """
-        Return True if the container has been once archived
+        Return True if the container has been created by lxci
         """
         return os.path.exists(os.path.join(
             self.get_rootfs_path(),
