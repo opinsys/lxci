@@ -4,7 +4,7 @@ bindir = $(exec_prefix)/bin
 
 # Huh, even python uses different paths under /usr/local
 ifeq ($(prefix),/usr/local)
-	PYTHON_PATH_DIR = $(prefix)/local/lib/python3.4/dist-packages
+	PYTHON_PATH_DIR = $(prefix)/lib/python3.4/dist-packages
 else
 	PYTHON_PATH_DIR = $(prefix)/lib/python3/dist-packages
 endif
