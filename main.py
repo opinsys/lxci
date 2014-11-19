@@ -38,8 +38,8 @@ def die(*a):
 
 
 def inspect(args):
-    if not args.inspect in lxci.list_base_containers():
-        die("Unknown base container {}. See --list-archive".format(args.base_container))
+    if not args.inspect in lxci.list_archived_containers():
+        die("Unknown container {}. See --list-archive".format(args.inspect))
     container = lxci.RuntimeContainer(lxc.Container(args.inspect, config_path=config.ARCHIVE_CONFIG_PATH))
     container.start()
     cmd = container.run_command("bash")
@@ -149,7 +149,7 @@ def main():
             print("Command failed in the container with exit status {status}".format(status=cmd.returncode))
             if archive:
                 print(
-                    "You may inspect what went wrong with: {SCRIPT_NAME} --inspect {name}".format(
+                    "You may inspect what went wrong with: [sudo] {SCRIPT_NAME} --inspect {name}".format(
                     SCRIPT_NAME=SCRIPT_NAME, name=runtime_container.get_name())
                 )
 

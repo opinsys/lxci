@@ -45,7 +45,7 @@ def list_archived_containers(return_object=False, tag=None):
         container = RuntimeContainer(lxc.Container(name, config_path=config.ARCHIVE_CONFIG_PATH))
         if tag and tag not in container.get_tags():
             continue
-        if container.is_archived():
+        if container.is_lxci_container():
             if return_object:
                 containers.append(container)
             else:
@@ -61,7 +61,7 @@ def clear_archive():
     with timer_print("Destroying {} archived containers".format(len(containers))):
         for name in  containers:
             container = lxc.Container(name, config_path=config.ARCHIVE_CONFIG_PATH)
-            if container.state == "STOPPED" and RuntimeContainer(container).is_archived():
+            if container.state == "STOPPED" and RuntimeContainer(container).is_lxci_container():
                 assert_ret(container.destroy())
 
 def make_executable(filepath):
@@ -115,7 +115,6 @@ class RuntimeContainer():
         """
         Start the container and wait until the SSH server is available
         """
-
 
         with timer_print("Waiting for the container to boot"):
             if self.container.state != "RUNNING":
@@ -185,7 +184,7 @@ class RuntimeContainer():
         """
         command_filepath = os.path.join(
             self.get_rootfs_path(),
-            "lxci_command.sh"
+            "lxci/command.sh"
         )
 
         with open(command_filepath, "w") as f:
@@ -206,7 +205,7 @@ cd /home/lxci/workspace
             "-i", config.SSH_KEY_PATH, # Use our ssh key
             "-l", "lxci", # Login as lxci user
             self.container.get_ips()[0],
-            "/lxci_command.sh",
+            "/lxci/command.sh",
             ], pass_fds=os.pipe()
             # stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE
         )
@@ -216,7 +215,8 @@ cd /home/lxci/workspace
     def get_meta_filepath(self):
         return os.path.join(
             self.get_rootfs_path(),
-            "lxci.json"
+            "lxci",
+            "meta"
         )
 
     def is_runtime_container(self):
@@ -246,11 +246,6 @@ cd /home/lxci/workspace
         old.update(meta)
         self.write_meta(old)
 
-    def get_archive_flag_path(self):
-        return os.path.join(
-            self.get_rootfs_path(),
-            "lxci_archived"
-        )
 
     def archive(self):
         """
@@ -261,9 +256,6 @@ cd /home/lxci/workspace
         self.stop()
 
         with timer_print("Archiving the container"):
-            with open(self.get_archive_flag_path(), "w") as f:
-                f.write(datetime.datetime.now().isoformat())
-
             if config.RUNTIME_CONFIG_PATH == config.ARCHIVE_CONFIG_PATH:
                 archived_container = self.container
             else:
@@ -278,11 +270,14 @@ cd /home/lxci/workspace
 
         return archived_container
 
-    def is_archived(self):
+    def is_lxci_container(self):
         """
         Return True if the container has been once archived
         """
-        return os.path.exists(self.get_archive_flag_path())
+        return os.path.exists(os.path.join(
+            self.get_rootfs_path(),
+            "lxci"
+        ))
 
     def stop(self):
         if self.container.state == "STOPPED":
@@ -317,15 +312,17 @@ def create_runtime_container(base_container_name, runtime_container_name):
         assert_ret(container, "Error while creating the runtime container")
 
     rootfs_path = container.get_config_item("lxc.rootfs")
-    setup_sh_path = os.path.join(
+    os.makedirs(os.path.join(container.get_config_item("lxc.rootfs"), "lxci"), exist_ok=True)
+
+    prepare_sh_path = os.path.join(
         container.get_config_item("lxc.rootfs"),
-        "lxci_prepare.sh"
+        "lxci",
+        "prepare.sh"
     )
 
-    with open(setup_sh_path, "w") as f:
-        f.write("""
-#!/bin/sh
-exec >> /var/log/lxci_prepare.log
+    with open(prepare_sh_path, "w") as f:
+        f.write("""#!/bin/sh
+exec >> /var/log/lxci-prepare.log
 exec 2>&1
 set -eux
 adduser --system --shell /bin/bash --group lxci
@@ -334,16 +331,16 @@ usermod -a -G sudo lxci
 echo "%lxci ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 mkdir /home/lxci/.ssh
 mkdir /home/lxci/workspace
-    """)
+""")
 
-    make_executable(setup_sh_path)
+    make_executable(prepare_sh_path)
 
     res = None
     with timer_print("Preparing the container"):
-        res = container.start(False, False, False, ("/lxci_prepare.sh",))
+        res = container.start(False, False, False, ("/lxci/prepare.sh",))
     if not res:
         raise Exception(
-            "Failed to prepare the container. Check {rootfs}/var/log/lxci_prepare.log".format(rootfs=rootfs_path)
+            "Failed to prepare the container. Check {rootfs}/var/log/lxci-prepare.log".format(rootfs=rootfs_path)
         )
 
     shutil.copyfile(
