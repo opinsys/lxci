@@ -16,11 +16,11 @@ This will do following
 
 > Add `-v` to see in details
 
-To execute custom command instead of bash use the `--command COMMAND`
+To execute custom command instead of bash use `--command COMMAND`
 
     lxci trusty-amd64 --command hostname
 
-To copy files to the container workspace use `--sync-workspace PATH`
+To copy files into the container workspace use `--sync-workspace PATH`
 
     lxci trusty-amd64 --command "ls -l" --sync-workspace .
 
@@ -32,7 +32,7 @@ The archived containers can be listed with `--list-archive`
 
     lxci --list-archive
 
-To inspect the archived container use `--inspect`
+To inspect an archived container use `--inspect NAME`
 
     lxci --inspect NAME
 
