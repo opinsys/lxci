@@ -116,11 +116,13 @@ class RuntimeContainer():
         Start the container and wait until the SSH server is available
         """
 
+
         with timer_print("Waiting for the container to boot"):
             if self.container.state != "RUNNING":
                 assert_ret(self.container.start(), "Failed to start the runtime container")
                 self.container.wait("RUNNING", 60)
 
+        started = time.time()
         ips = tuple()
         with timer_print("Waiting for the container to get network"):
             while True:
@@ -128,9 +130,12 @@ class RuntimeContainer():
                 if len(ips) > 0:
                     break
                 time.sleep(0.1)
+                if time.time() - started > 10:
+                    raise RuntimeContainerError("Timeout while waiting for container ip address")
 
         ip = ips[0]
 
+        started = time.time()
         with timer_print("Waiting for the container SSH server to wake up"):
             while True:
                 try:
@@ -138,6 +143,8 @@ class RuntimeContainer():
                     break
                 except Exception:
                     time.sleep(0.1)
+                if time.time() - started > 10:
+                    raise RuntimeContainerError("Timeout while waiting for container SSH server to wake up. Are you sure it is installed?")
 
     def write_env(self, env):
         """
@@ -302,7 +309,7 @@ def create_runtime_container(base_container_name, runtime_container_name):
     os.makedirs(config.RUNTIME_CONFIG_PATH, exist_ok=True)
 
     container = None
-    with timer_print("Creating container '{runtime}' from the '{base}' container".format(runtime=runtime_container_name, base=base_container_name)):
+    with timer_print("Creating container '{runtime}' using '{base}'".format(runtime=runtime_container_name, base=base_container_name)):
         container = base_container.clone(
             runtime_container_name,
             config_path=config.RUNTIME_CONFIG_PATH
