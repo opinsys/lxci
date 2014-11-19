@@ -117,7 +117,7 @@ def main():
         return destroy_archive(args)
 
     if not args.base_container:
-        die("BASE_CONTAINER not defined. See --help")
+        die("BASE_CONTAINER not defined. See [sudo] lxc-ls")
 
     if not args.name:
         args.name = args.base_container + "-runtime-" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
