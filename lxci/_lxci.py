@@ -251,6 +251,7 @@ cd /home/lxci/workspace
         """
 
         archived_container = None
+        self.stop()
 
         with timer_print("Archiving the container"):
             with open(self.get_archive_flag_path(), "w") as f:
@@ -277,16 +278,18 @@ cd /home/lxci/workspace
         return os.path.exists(self.get_archive_flag_path())
 
     def stop(self):
+        if self.container.state == "STOPPED":
+            return
         with timer_print("Stopping the container"):
-            if self.container.state == "STOPPED":
-                return
             assert_ret(self.container.stop(), "Failed to stop the container")
             self.container.wait("STOPPED", 60)
 
     def destroy(self):
+        self.stop()
         if self.container.state != "STOPPED":
             error_message("Cannot destroy container {} since it's not stopped".format(self.get_name()))
             return
+
         with timer_print("Destroying container {}".format(self.get_name())):
             assert_ret(self.container.destroy())
 
