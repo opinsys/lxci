@@ -14,7 +14,7 @@ This will do following
 4. Logins as the `lxci` user over ssh and starts `bash`
 5. After the bash command exists the container is destroyed
 
-> Add `-v` to see in details
+> Add `-v` to see details
 
 To execute custom command instead of bash use `--command COMMAND`
 
