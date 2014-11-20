@@ -23,6 +23,7 @@ run_test(){
     local test_file=$1
     rm /tmp/lxci_test_* -rf
     echo -n "Running $test_file "
+    chmod +x "$test_file"
     res="$($test_file 2>&1)"
     if [ "$?" = "0" ]; then
         echo "OK!"

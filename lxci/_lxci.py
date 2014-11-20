@@ -3,6 +3,7 @@ import datetime
 import json
 import lxc
 import os
+import pwd
 import shutil
 import socket
 import stat
@@ -178,6 +179,13 @@ class RuntimeContainer():
 
 
     def sync_workspace(self, source_dir):
+
+        # sudo users can only sync files from their home directory
+        if "SUDO_UID" in os.environ:
+            home_dir = pwd.getpwuid(int(os.environ["SUDO_UID"])).pw_dir
+            if not os.path.realpath(source_dir).startswith(home_dir):
+                raise RuntimeContainerError("Permission denied: sudo users can sync only their home directories")
+
         workspace_dirpath = os.path.join(
             self.get_rootfs_path(),
             "home/lxci/workspace"
