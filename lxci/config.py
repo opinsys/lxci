@@ -16,9 +16,14 @@ VERBOSE = False
 with open(os.path.join(_dir, "VERSION"), "r") as _f:
     VERSION = _f.read().strip()
 
-for _configfile in (os.environ["HOME"] + "/.config/lxci/config", "/etc/lxci/config"):
+_config_files = [os.environ["HOME"] + "/.config/lxci/config", "/etc/lxci/config"]
+
+if os.environ.get("LXCI_CONFIG"):
+    _config_files = [os.environ.get("LXCI_CONFIG")]
+
+for _configfile in _config_files:
     try:
-        with open("config", "r") as _f:
+        with open(_configfile, "r") as _f:
             _parser = configparser.ConfigParser()
             _parser.read_string("[default]\n" + _f.read())
             for _key, _value in _parser["default"].items():

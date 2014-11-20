@@ -12,7 +12,10 @@ from lxci import config, error_message, verbose_message
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 
-parser = argparse.ArgumentParser(description="lxCI - Start temporary container based on an existing one")
+parser = argparse.ArgumentParser(
+    description="lxCI - Run commands in temporary containers",
+    epilog="Use environment variable LXCI_CONFIG to set custom path to configuration file"
+)
 parser.add_argument("base_container", metavar="BASE_CONTAINER", nargs="?", help="base container to use. Use [sudo] lxc-ls to list available containers.")
 parser.add_argument("-c", "--command", metavar="COMMAND", default="bash", dest="command", help="shell command to be executed in the container. If set to - the command will be read from the stdin. DEFAULT: bash")
 parser.add_argument("-n", "--name",  metavar="NAME", dest="name", help="custom name for the temporary runtime container")
