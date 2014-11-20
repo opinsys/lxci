@@ -155,10 +155,7 @@ class RuntimeContainer():
         Append environment variables from the dict env to /etc/environment in the container
         """
 
-        env_filepath = os.path.join(
-            self.get_rootfs_path(),
-            "etc/environment"
-        )
+        env_filepath = self.get_path("/etc/environment")
 
         with open(env_filepath, "a") as f:
             f.write('\n')
@@ -170,10 +167,7 @@ class RuntimeContainer():
         return self.container.get_config_item("lxc.rootfs")
 
     def get_results_src_path(self):
-        return os.path.join(
-            self.get_rootfs_path(),
-            "home/lxci/results"
-        )
+        return self.get_path("/home/lxci/results")
 
     def get_results_dest_path(self):
         return os.path.join(
@@ -201,27 +195,19 @@ class RuntimeContainer():
             if not os.path.realpath(source_dir).startswith(home_dir):
                 raise RuntimeContainerError("Permission denied: sudo users can sync only their home directories")
 
-        workspace_dirpath = os.path.join(
-            self.get_rootfs_path(),
-            "home/lxci/workspace"
-        )
-
         with timer_print("Synchronizing {} to the container".format(source_dir)):
             subprocess.check_call([
                 "rsync",
                 "-a",
                 source_dir,
-                workspace_dirpath
+                self.get_path("/home/lxci/workspace"),
             ])
 
     def run_command(self, command):
         """
         Run given command in the container using SSH
         """
-        command_filepath = os.path.join(
-            self.get_rootfs_path(),
-            "lxci/command.sh"
-        )
+        command_filepath = self.get_path("/lxci/command.sh")
 
         with open(command_filepath, "w") as f:
             f.write(command_header)
@@ -252,11 +238,8 @@ class RuntimeContainer():
         if self.container.state != "STOPPED":
             raise RuntimeContainerError("Can only prepare stopped containers")
 
-        prepare_sh_path = "tmp/lxci-prepare.sh"
-        prepare_sh_path_fullpath = os.path.join(
-            self.get_rootfs_path(),
-            "tmp/lxci-prepare.sh"
-        )
+        prepare_sh_path = "/tmp/lxci-prepare.sh"
+        prepare_sh_path_fullpath = self.get_path(prepare_sh_path)
 
         with open(prepare_sh_path_fullpath, "w") as f:
             f.write(prepare_header)
@@ -267,7 +250,7 @@ class RuntimeContainer():
 
         make_executable(prepare_sh_path_fullpath)
         assert_ret(
-            self.container.start(useinit=False, daemonize=False, close_fds=False, cmd=("/" + prepare_sh_path,)),
+            self.container.start(useinit=False, daemonize=False, close_fds=False, cmd=(prepare_sh_path,)),
             "Failed to prepare the container. Check {rootfs}/var/log/lxci-prepare.log".format(rootfs=self.get_rootfs_path())
         )
 
@@ -290,11 +273,7 @@ class RuntimeContainer():
             f.write("%lxci ALL=(ALL) NOPASSWD: ALL\n")
 
     def get_meta_filepath(self):
-        return os.path.join(
-            self.get_rootfs_path(),
-            "lxci",
-            "meta"
-        )
+        return self.get_path("/lxci/meta")
 
     def is_runtime_container(self):
         return os.path.exists(self.get_meta_filepath())
@@ -351,10 +330,7 @@ class RuntimeContainer():
         """
         Return True if the container has been created by lxci
         """
-        return os.path.exists(os.path.join(
-            self.get_rootfs_path(),
-            "lxci"
-        ))
+        return os.path.exists(self.get_path("/lxci"))
 
     def stop(self):
         if self.container.state == "STOPPED":
