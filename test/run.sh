@@ -24,11 +24,17 @@ run_test(){
     rm /tmp/lxci_test_* -rf
     echo -n "Running $test_file "
     chmod +x "$test_file"
-    res="$($test_file 2>&1)"
+    res="$(timeout 60 "./$test_file" 2>&1)"
+
+    if [ "$?" = "124" ]; then
+        echo "TIMEOUT FAIL!"
+        exit 2
+    fi
+
     if [ "$?" = "0" ]; then
         echo "OK!"
     else
-        echo "FAILED!"
+        echo "FAIL!"
         echo "$res"
         exit 1
     fi
