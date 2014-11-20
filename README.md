@@ -57,7 +57,9 @@ todo
 
 ### Artifacts
 
-todo
+Place any files to `/home/lxci/results` in the container and they will be
+copied to `/var/lib/lxci-results/NAME` on the host. The `NAME` is the name of
+the temporary container. Set it with `--name`.
 
 ## Making it ridiculously fast with tmpfs
 

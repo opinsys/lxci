@@ -175,6 +175,10 @@ def main():
         "stopped": datetime.datetime.now().isoformat(),
         "exit_code": cmd.returncode,
     })
+
+    if not did_fail and runtime_container.has_results_files():
+        runtime_container.copy_results()
+
     if not did_fail and args.destroy_on_ok:
         destroy_archive(args)
 

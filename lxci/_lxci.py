@@ -99,6 +99,7 @@ class RuntimeContainer():
     def get_name(self):
         return self.container.name
 
+
     def start(self):
         """
         Start the container and wait until the SSH server is available
@@ -152,6 +153,30 @@ class RuntimeContainer():
     def get_rootfs_path(self):
         return self.container.get_config_item("lxc.rootfs")
 
+    def get_results_src_path(self):
+        return os.path.join(
+            self.get_rootfs_path(),
+            "home/lxci/results"
+        )
+
+    def get_results_dest_path(self):
+        return os.path.join(
+            config.RESULTS_PATH,
+            self.get_name()
+        )
+
+    def copy_results(self):
+        with timer_print("Copying result artifacts to {}".format(self.get_results_dest_path())):
+            # os.makedirs(self.get_results_dest_path(), exist_ok=True)
+            shutil.copytree(
+                self.get_results_src_path(),
+                self.get_results_dest_path()
+            )
+
+    def has_results_files(self):
+        return len(os.listdir(self.get_results_src_path())) > 0
+
+
     def sync_workspace(self, source_dir):
         workspace_dirpath = os.path.join(
             self.get_rootfs_path(),
@@ -179,7 +204,7 @@ class RuntimeContainer():
             f.write("""
 #!/bin/sh
 set -eu
-sudo chown -R lxci:lxci /home/lxci/workspace
+sudo chown -R lxci:lxci /home/lxci
 cd /home/lxci/workspace
 {command}
 """.format(command=command))
@@ -318,6 +343,7 @@ echo -n 'lxci:lxci' | chpasswd
 usermod -a -G sudo lxci
 echo "%lxci ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 mkdir /home/lxci/.ssh
+mkdir /home/lxci/results
 mkdir /home/lxci/workspace
 """)
 
