@@ -375,7 +375,7 @@ def create_runtime_container(base_container_name, runtime_container_name):
 
     runtime_container =  RuntimeContainer(container)
     runtime_container.prepare((
-        "adduser --system --shell /bin/bash --group lxci",
+        "adduser --system --uid 555 --shell /bin/bash --group lxci",
         "echo -n 'lxci:lxci' | chpasswd",
         "usermod -a -G sudo lxci",
         'echo "%lxci ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers',
