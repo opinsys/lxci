@@ -7,14 +7,15 @@ Run commands in temporary containers
 
 This will do following
 
-1. Creates a new temporary container based on the existing `trusty-amd64` container
-  - Create it with `sudo lxc-create -t download -n trusty-amd64 -- --dist ubuntu --release trusty --arch amd64` and install openssh-server in it
+1. Creates a new temporary container based on the existing `trusty-amd64` container<sup>1</sup>
 2. Adds user `lxci` to it
 3. Boots and waits for the network and ssh server to wake up in it
 4. Logins as the `lxci` user over ssh and starts `bash`
 5. After the bash command exists the container is destroyed
 
 > Add `-v` to see details
+> <sup>1</sup> Create it with `sudo lxc-create -t download -n trusty-amd64 -- --dist ubuntu --release trusty --arch amd64` and install openssh-server into it
+
 
 To execute custom command instead of bash use `--command COMMAND`
 
