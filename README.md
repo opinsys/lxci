@@ -14,6 +14,7 @@ This will do following
 5. After the bash command exists the container is destroyed
 
 > Add `-v` to see details
+>
 > <sup>1</sup> Create it with `sudo lxc-create -t download -n trusty-amd64 -- --dist ubuntu --release trusty --arch amd64` and install openssh-server into it
 
 
