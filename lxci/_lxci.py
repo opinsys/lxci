@@ -365,7 +365,6 @@ def create_runtime_container(base_container_name, runtime_container_name):
         )
         assert_ret(container, "Error while creating the runtime container")
 
-    rootfs_path = container.get_config_item("lxc.rootfs")
     os.makedirs(os.path.join(container.get_config_item("lxc.rootfs"), "lxci"), exist_ok=True)
 
     runtime_container =  RuntimeContainer(container)
@@ -379,7 +378,7 @@ def create_runtime_container(base_container_name, runtime_container_name):
 
     shutil.copyfile(
         config.SSH_PUB_KEY_PATH,
-        os.path.join(rootfs_path, "home/lxci/.ssh/authorized_keys")
+        runtime_container.get_path("/home/lxci/.ssh/authorized_keys")
     )
 
     runtime_container.add_meta({
