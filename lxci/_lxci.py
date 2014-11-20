@@ -88,6 +88,8 @@ class RuntimeContainer():
         if isinstance(container, str):
             raise TypeError("Expected container to be instance of lxc.Container not string")
         self.container = container
+        self._prepare_commands = []
+
 
     def __str__(self):
         meta = self.read_meta()
@@ -118,8 +120,7 @@ class RuntimeContainer():
         """
 
         if self.container.state == "STOPPED":
-            # Ensure the user can read everything in home
-            self.prepare(["chown -R lxci:lxci /home/lxci"])
+            self.prepare()
 
         with timer_print("Waiting for the container to boot"):
             if self.container.state != "RUNNING":
@@ -231,10 +232,16 @@ class RuntimeContainer():
         cmd.wait()
         return cmd
 
-    def prepare(self, commands):
+    def add_prepare_command(self, command):
         """
-        Run list of preparation commands in a stopped container
+        Add a prepare command. It will be executed in the container as root
+        before it is actually started
         """
+        if self.container.state != "STOPPED":
+            raise RuntimeContainerError("Can only prepare stopped containers")
+        self._prepare_commands.append(command)
+
+    def prepare(self):
         if self.container.state != "STOPPED":
             raise RuntimeContainerError("Can only prepare stopped containers")
 
@@ -244,7 +251,7 @@ class RuntimeContainer():
         with open(prepare_sh_path_fullpath, "w") as f:
             f.write(prepare_header)
             f.write("\n")
-            for command in commands:
+            for command in self._prepare_commands:
                 f.write(command)
                 f.write("\n")
 
@@ -269,7 +276,7 @@ class RuntimeContainer():
         """
 
         verbose_message("Enabling sudo for the lxci user")
-        self.prepare(["usermod -a -G sudo lxci"])
+        self.add_prepare_command("usermod -a -G sudo lxci")
         with open(self.get_path("/etc/sudoers"), "a") as f:
             f.write("%lxci ALL=(ALL) NOPASSWD: ALL\n")
 
@@ -369,14 +376,14 @@ def create_runtime_container(base_container_name, runtime_container_name):
 
     # Create lxci directory
     os.makedirs(runtime_container.get_path("/lxci"), exist_ok=True)
+    os.makedirs(runtime_container.get_path("/home/lxci/.ssh"))
+    os.makedirs(runtime_container.get_path("/home/lxci/results"))
+    os.makedirs(runtime_container.get_path("/home/lxci/workspace"))
 
-    runtime_container.prepare((
-        "adduser --system --uid 555 --shell /bin/bash --group lxci",
-        "echo -n 'lxci:lxci' | chpasswd",
-        "mkdir /home/lxci/.ssh",
-        "mkdir /home/lxci/results",
-        "mkdir /home/lxci/workspace",
-    ))
+    runtime_container.add_prepare_command("adduser --system --uid 555 --shell /bin/bash --group lxci")
+    runtime_container.add_prepare_command("echo -n 'lxci:lxci' | chpasswd")
+    # Ensure the user can read everything in home
+    runtime_container.add_prepare_command("chown -R lxci:lxci /home/lxci")
 
     shutil.copyfile(
         config.SSH_PUB_KEY_PATH,
