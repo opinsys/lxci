@@ -21,6 +21,10 @@ install: installdirs
 
 
 test:
+	# too slow to run on packet build
+
+test_:
+	sudo test/run.sh
 
 clean:
 	find . -name '*.pyc' -delete

@@ -1,0 +1,2 @@
+RUNTIME_CONFIG_PATH=/tmp/lxci_test_runtime
+ARCHIVE_CONFIG_PATH=/tmp/lxci_test_archive
