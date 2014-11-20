@@ -381,7 +381,6 @@ def create_runtime_container(base_container_name, runtime_container_name):
     os.makedirs(runtime_container.get_path("/home/lxci/workspace"))
 
     runtime_container.add_prepare_command("adduser --system --uid 555 --shell /bin/bash --group lxci")
-    runtime_container.add_prepare_command("echo -n 'lxci:lxci' | chpasswd")
     # Ensure the user can read everything in home
     runtime_container.add_prepare_command("chown -R lxci:lxci /home/lxci")
 
