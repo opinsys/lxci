@@ -17,7 +17,7 @@ parser.add_argument("base_container", metavar="BASE_CONTAINER", nargs="?", help=
 parser.add_argument("-c", "--command", metavar="COMMAND", default="bash", dest="command", help="shell command to be executed in the container. If set to - the command will be read from the stdin. DEFAULT: bash")
 parser.add_argument("-n", "--name",  metavar="NAME", dest="name", help="custom name for the temporary runtime container")
 parser.add_argument("-t", "--tag",  metavar="TAG", dest="tag", help="tag container with TAG")
-parser.add_argument("-s", "--sync-workspace",  metavar="DIR", dest="workspace_source_dir", help="synchronize DIR to the container. The trailing slash works like in rsync. If it is present the contents of the DIR is synchronized to the current working directory command. If not the directory itself is synchronized.")
+parser.add_argument("-s", "--sync",  metavar="DIR", dest="workspace_source_dir", help="synchronize DIR to the container. The trailing slash works like in rsync. If it is present the contents of the DIR is synchronized to the current working directory command. If not the directory itself is synchronized.")
 parser.add_argument("-A", "--archive", dest="archive", action="store_true", help="archive the container after running the command")
 parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="store_true", help="archive the container only if the command returns with non zero exit status")
 parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="list archived containers. Combine --verbose to see tags and filter list with --tag TAG")

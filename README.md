@@ -25,7 +25,7 @@ To execute custom command instead of bash use `--command COMMAND`
 
 To copy files into the container workspace use `--sync PATH`
 
-    lxci trusty-amd64 --command "ls -l" --sync-workspace .
+    lxci trusty-amd64 --command "ls -l" --sync .
 
 To archive the container on failures add `--archive-on-fail`
 
