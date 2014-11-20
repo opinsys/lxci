@@ -12,26 +12,26 @@ import sys
 
 from lxci import config
 
-def error_message(*a):
-    print(*a, file=sys.stderr)
+def error_message(*a, **kw):
+    print(*a, file=sys.stderr, **kw)
+    sys.stderr.flush()
 
-def verbose_message(*a):
+def verbose_message(*a, **kw):
     if config.VERBOSE:
-        print(*a, file=sys.stderr)
+        print(*a, file=sys.stderr, **kw)
+        sys.stderr.flush()
 
 class timer_print():
     """
     Measure how long it takes to run the with block
     """
     def __init__(self, msg):
-        if config.VERBOSE:
-            print(msg + "... ", end="", flush=True)
+        verbose_message(msg + "...", end="")
     def __enter__(self):
         self.started = time.time()
     def __exit__(self, type, value, traceback):
         took = time.time() - self.started
         verbose_message("OK {}s".format(round(took, 2)))
-        sys.stdout.flush()
 
 def list_base_containers():
     return lxc.list_containers(config_path=config.BASE_CONFIG_PATH)
