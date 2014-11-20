@@ -79,6 +79,7 @@ set -eux
 
 command_header = """#!/bin/sh
 set -eu
+cd /home/lxci/workspace
 """
 
 class RuntimeContainer():
