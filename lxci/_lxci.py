@@ -269,6 +269,7 @@ class RuntimeContainer():
         """
 
         verbose_message("Enabling sudo for the lxci user")
+        self.prepare(["usermod -a -G sudo lxci"])
         with open(self.get_path("/etc/sudoers"), "a") as f:
             f.write("%lxci ALL=(ALL) NOPASSWD: ALL\n")
 
@@ -371,7 +372,6 @@ def create_runtime_container(base_container_name, runtime_container_name):
     runtime_container.prepare((
         "adduser --system --uid 555 --shell /bin/bash --group lxci",
         "echo -n 'lxci:lxci' | chpasswd",
-        "usermod -a -G sudo lxci",
         "mkdir /home/lxci/.ssh",
         "mkdir /home/lxci/results",
         "mkdir /home/lxci/workspace",
