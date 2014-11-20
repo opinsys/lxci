@@ -270,6 +270,23 @@ class RuntimeContainer():
             "Failed to prepare the container. Check {rootfs}/var/log/lxci-prepare.log".format(rootfs=self.get_rootfs_path())
         )
 
+    def get_path(self, path):
+        """
+        Convert container absolute path to host absolute path for the rootfs of
+        the container
+        """
+        if path[0] == "/":
+            path = path[1:]
+        return os.path.join(self.get_rootfs_path(), path)
+
+    def enable_sudo(self):
+        """
+        Enable passwordless sudo for lxci user
+        """
+
+        verbose_message("Enabling sudo for the lxci user")
+        with open(self.get_path("/etc/sudoers"), "a") as f:
+            f.write("%lxci ALL=(ALL) NOPASSWD: ALL\n")
 
     def get_meta_filepath(self):
         return os.path.join(
@@ -378,7 +395,6 @@ def create_runtime_container(base_container_name, runtime_container_name):
         "adduser --system --uid 555 --shell /bin/bash --group lxci",
         "echo -n 'lxci:lxci' | chpasswd",
         "usermod -a -G sudo lxci",
-        'echo "%lxci ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers',
         "mkdir /home/lxci/.ssh",
         "mkdir /home/lxci/results",
         "mkdir /home/lxci/workspace",

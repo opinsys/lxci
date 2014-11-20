@@ -82,7 +82,6 @@ http://www.slideshare.net/jpetazzo/is-it-safe-to-run-applications-in-linux-conta
 
 ## todo
 
-- --sudo
 - generate keys
 - disable pw
 

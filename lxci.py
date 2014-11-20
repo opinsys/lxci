@@ -31,6 +31,7 @@ parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="st
 parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="copy comma separated environment variables to the container")
 parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Example FOO=bar")
 parser.add_argument("--print-config", dest="print_config", action="store_true", help="print config")
+parser.add_argument("-S", "--sudo", dest="sudo", action="store_true", help="enable passwordless sudo in the container")
 parser.add_argument("-V", "--version", dest="version", action="store_true", help="print lxci version")
 parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="be verbose")
 
@@ -165,6 +166,9 @@ def main():
 
     if args.workspace_source_dir:
         runtime_container.sync_workspace(args.workspace_source_dir)
+
+    if args.sudo:
+        runtime_container.enable_sudo()
 
     runtime_container.start()
     runtime_container.add_meta({ "started": datetime.datetime.now().isoformat() })
