@@ -365,9 +365,11 @@ def create_runtime_container(base_container_name, runtime_container_name):
         )
         assert_ret(container, "Error while creating the runtime container")
 
-    os.makedirs(os.path.join(container.get_config_item("lxc.rootfs"), "lxci"), exist_ok=True)
-
     runtime_container =  RuntimeContainer(container)
+
+    # Create lxci directory
+    os.makedirs(runtime_container.get_path("/lxci"), exist_ok=True)
+
     runtime_container.prepare((
         "adduser --system --uid 555 --shell /bin/bash --group lxci",
         "echo -n 'lxci:lxci' | chpasswd",
