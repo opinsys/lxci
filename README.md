@@ -45,7 +45,7 @@ To list all other options use `--help`
 
     lxci --help
 
-## Artifacts
+# Artifacts
 
 Place any files to `/home/lxci/results` in the container and they will be
 copied to `/var/lib/lxci-results/NAME` on the host. The `NAME` is the name of
@@ -83,7 +83,6 @@ http://www.slideshare.net/jpetazzo/is-it-safe-to-run-applications-in-linux-conta
 ## todo
 
 - --sudo
-- artifacts
 - generate keys
 - disable pw
 
