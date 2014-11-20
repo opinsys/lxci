@@ -208,6 +208,10 @@ class RuntimeContainer():
         """
         Run given command in the container using SSH
         """
+
+        if self.container.state == "STOPPED":
+            raise RuntimeContainerError("Can run commands only in running containers")
+
         command_filepath = self.get_path("/lxci/command.sh")
 
         with open(command_filepath, "w") as f:
