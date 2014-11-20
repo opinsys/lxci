@@ -23,7 +23,7 @@ To execute custom command instead of bash use `--command COMMAND`
 
     lxci trusty-amd64 --command hostname
 
-To copy files into the container workspace use `--sync-workspace PATH`
+To copy files into the container workspace use `--sync PATH`
 
     lxci trusty-amd64 --command "ls -l" --sync-workspace .
 
