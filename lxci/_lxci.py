@@ -71,6 +71,12 @@ def assert_ret(val, msg=""):
     if not val:
         raise RuntimeContainerError(msg)
 
+prepare_header = """#!/bin/sh
+exec >> /var/log/lxci-prepare.log
+exec 2>&1
+set -eux
+"""
+
 class RuntimeContainer():
 
     def __init__(self, container):
@@ -233,6 +239,33 @@ cd /home/lxci/workspace
         cmd.wait()
         return cmd
 
+    def prepare(self, commands):
+        """
+        Run list of preparation commands in a stopped container
+        """
+        if self.container.state != "STOPPED":
+            raise RuntimeContainerError("Can only prepare stopped containers")
+
+        prepare_sh_path = "tmp/lxci-prepare.sh"
+        prepare_sh_path_fullpath = os.path.join(
+            self.get_rootfs_path(),
+            "tmp/lxci-prepare.sh"
+        )
+
+        with open(prepare_sh_path_fullpath, "w") as f:
+            f.write(prepare_header)
+            f.write("\n")
+            for command in commands:
+                f.write(command)
+                f.write("\n")
+
+        make_executable(prepare_sh_path_fullpath)
+        assert_ret(
+            self.container.start(useinit=False, daemonize=False, close_fds=False, cmd=("/" + prepare_sh_path,)),
+            "Failed to prepare the container. Check {rootfs}/var/log/lxci-prepare.log".format(rootfs=self.get_rootfs_path())
+        )
+
+
     def get_meta_filepath(self):
         return os.path.join(
             self.get_rootfs_path(),
@@ -335,42 +368,22 @@ def create_runtime_container(base_container_name, runtime_container_name):
     rootfs_path = container.get_config_item("lxc.rootfs")
     os.makedirs(os.path.join(container.get_config_item("lxc.rootfs"), "lxci"), exist_ok=True)
 
-    prepare_sh_path = os.path.join(
-        container.get_config_item("lxc.rootfs"),
-        "lxci",
-        "prepare.sh"
-    )
-
-    with open(prepare_sh_path, "w") as f:
-        f.write("""#!/bin/sh
-exec >> /var/log/lxci-prepare.log
-exec 2>&1
-set -eux
-adduser --system --shell /bin/bash --group lxci
-echo -n 'lxci:lxci' | chpasswd
-usermod -a -G sudo lxci
-echo "%lxci ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-mkdir /home/lxci/.ssh
-mkdir /home/lxci/results
-mkdir /home/lxci/workspace
-""")
-
-    make_executable(prepare_sh_path)
-
-    res = None
-    with timer_print("Preparing the container"):
-        res = container.start(False, False, False, ("/lxci/prepare.sh",))
-    if not res:
-        raise Exception(
-            "Failed to prepare the container. Check {rootfs}/var/log/lxci-prepare.log".format(rootfs=rootfs_path)
-        )
+    runtime_container =  RuntimeContainer(container)
+    runtime_container.prepare((
+        "adduser --system --shell /bin/bash --group lxci",
+        "echo -n 'lxci:lxci' | chpasswd",
+        "usermod -a -G sudo lxci",
+        'echo "%lxci ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers',
+        "mkdir /home/lxci/.ssh",
+        "mkdir /home/lxci/results",
+        "mkdir /home/lxci/workspace",
+    ))
 
     shutil.copyfile(
         config.SSH_PUB_KEY_PATH,
         os.path.join(rootfs_path, "home/lxci/.ssh/authorized_keys")
     )
 
-    runtime_container =  RuntimeContainer(container)
     runtime_container.add_meta({
         "base": base_container_name,
         "created": datetime.datetime.now().isoformat(),
