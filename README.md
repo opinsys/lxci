@@ -45,7 +45,7 @@ To list all other options use `--help`
 
     lxci --help
 
-# Artifacts
+### Artifacts
 
 Place any files to `/home/lxci/results` in the container and they will be
 copied to `/var/lib/lxci-results/NAME` on the host. The `NAME` is the name of
