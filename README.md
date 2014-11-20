@@ -49,6 +49,8 @@ To list all other options use `--help`
 
 todo
 
+## Configuration
+
 ## Workflow with Continuous Integration Systems
 
 todo
@@ -81,4 +83,6 @@ http://www.slideshare.net/jpetazzo/is-it-safe-to-run-applications-in-linux-conta
 - --sudo
 - SUDO\_USER check
 - artifacts
+- generate keys
+- disable pw
 
