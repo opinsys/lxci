@@ -77,6 +77,10 @@ exec 2>&1
 set -eux
 """
 
+command_header = """#!/bin/sh
+set -eu
+"""
+
 class RuntimeContainer():
 
     def __init__(self, container):
@@ -111,6 +115,10 @@ class RuntimeContainer():
         """
         Start the container and wait until the SSH server is available
         """
+
+        if self.container.state == "STOPPED":
+            # Ensure the user can read everything in home
+            self.prepare(["chown -R lxci:lxci /home/lxci"])
 
         with timer_print("Waiting for the container to boot"):
             if self.container.state != "RUNNING":
@@ -215,13 +223,10 @@ class RuntimeContainer():
         )
 
         with open(command_filepath, "w") as f:
-            f.write("""
-#!/bin/sh
-set -eu
-sudo chown -R lxci:lxci /home/lxci
-cd /home/lxci/workspace
-{command}
-""".format(command=command))
+            f.write(command_header)
+            f.write("\n")
+            f.write(command)
+
         make_executable(command_filepath)
 
         cmd = subprocess.Popen([
