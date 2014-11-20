@@ -58,6 +58,15 @@ todo
 
 Do you think SSDs are fast?
 
+## Try it with Vagrant
+
+Just clone this repository type
+
+    vagrant up
+
+It will create an Ubuntu 14.04.1 LTS (Trusty Tahr) virtual machine with Jenkins
+(port 8080), LXC and lxCI ready to go.
+
 ## Security
 
 Not.
