@@ -34,16 +34,19 @@ class timer_print():
         took = time.time() - self.started
         verbose_message("OK {}s".format(round(took, 2)))
 
-def list_base_containers():
-    return lxc.list_containers(config_path=config.BASE_CONFIG_PATH)
+def list_base_containers(**kw):
+    return _list_containers(config.BASE_CONFIG_PATH, **kw)
 
-def list_runtime_containers():
-    return lxc.list_containers(config_path=config.RUNTIME_CONFIG_PATH)
+def list_runtime_containers(**kw):
+    return _list_containers(config.RUNTIME_CONFIG_PATH, **kw)
 
-def list_archived_containers(return_object=False, tag=None):
+def list_archived_containers(**kw):
+    return _list_containers(config.ARCHIVE_CONFIG_PATH, **kw)
+
+def _list_containers(config_path, return_object=False, tag=None):
     containers = []
-    for name in lxc.list_containers(config_path=config.ARCHIVE_CONFIG_PATH):
-        container = RuntimeContainer(lxc.Container(name, config_path=config.ARCHIVE_CONFIG_PATH))
+    for name in lxc.list_containers(config_path=config_path):
+        container = RuntimeContainer(lxc.Container(name, config_path=config_path))
         if tag and tag not in container.get_tags():
             continue
         if container.is_lxci_container():

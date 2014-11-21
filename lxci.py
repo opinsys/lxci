@@ -35,6 +35,7 @@ parser.add_argument("-S", "--sudo", dest="sudo", action="store_true", help="enab
 parser.add_argument("-p", "--snapshot", dest="snapshot", action="store_true", help="clone base container as a snapshot. Makes the temporary container creation really fast if your host filesystem supports this")
 parser.add_argument("-B", "--backingstore", metavar="BACKINGSTORE", dest="backingstore", help="set custom backingstore for --snapshot. Works just like lxc-clone --backingstore")
 parser.add_argument("-V", "--version", dest="version", action="store_true", help="print lxci version")
+parser.add_argument("--destroy-runtime", dest="destroy_runtime", action="store_true", help="stop and destroy all runtime containers")
 parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="be verbose")
 
 
@@ -81,6 +82,10 @@ def list_archive(args):
         else:
             print(c.get_name())
 
+def destroy_runtime(args):
+    for c in lxci.list_runtime_containers(return_object=True, tag=args.tag):
+        c.destroy()
+
 def main():
     args = parser.parse_args()
     if args.verbose:
@@ -108,6 +113,9 @@ def main():
 
     if args.info:
         return info(args)
+
+    if args.destroy_runtime:
+        return destroy_runtime(args)
 
     if args.copy_env:
         env_keys = args.env.split(",")
