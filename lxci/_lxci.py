@@ -35,7 +35,7 @@ class timer_print():
         verbose_message("OK {}s".format(round(took, 2)))
 
 def list_base_containers(**kw):
-    return _list_containers(config.BASE_CONFIG_PATH, **kw)
+    return lxc.list_containers(config_path=config.BASE_CONFIG_PATH)
 
 def list_runtime_containers(**kw):
     return _list_containers(config.RUNTIME_CONFIG_PATH, **kw)
