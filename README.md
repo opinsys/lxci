@@ -92,13 +92,82 @@ and finally the build artifacts are removed with plain old `rm`
 
 ## Installation
 
-todo
+lxCI is tested only on Ubuntu 14.04.1 LTS (Trusty Tahr) but in theory there
+is no reason why it wouldn't work on other distros with recent enough LXC.
 
-### Making it ridiculously fast with tmpfs
+Dependencies
 
-Do you think SSDs are fast?
+    apt-get install lxc python3-lxc rsync
+
+And then just install it using the Makefile
+
+    sudo make install
+
+
+### Ubuntu packages
+
+We have those. Docs coming soon.
 
 ### Configuration
+
+In `/etc/lxci/config`
+
+Default values are following
+
+```
+RUNTIME_CONFIG_PATH = /var/lib/lxci/runtime
+ARCHIVE_CONFIG_PATH = /var/lib/lxci/archive
+RESULTS_PATH = /var/lib/lxci/results
+
+SSH_KEY_PATH = /etc/lxci/key
+SSH_PUB_KEY_PATH = /etc/lxci/key.pub
+```
+
+### Making it fast with RAM disks
+
+Do you think SSDs are fast? Well, RAM kicks SSDs ass!
+
+As you can see lxCI uses different paths for the base, runtime and archived
+containers. This means we can use different file systems on each.
+
+Fun trick is to mount `tmpfs` or `ramfs` on `/var/lib/lxci/runtime` which
+causes the containers to be executed entirely in RAM. This means there will be
+no disk I/O involved when doing builds in it. Depending on your project this
+can be anything from small to epic speed up.
+
+To use it add
+
+    none                                           /var/lib/lxci/runtime    tmpfs   size=5g        0       0
+
+or
+
+    none                                           /var/lib/lxci/runtime    tmpfs   defaults        0       0
+
+
+to `/etc/fstab` and reload it in with `mount -a`.
+
+This will if course require some RAM from the host machine. For example booting
+Ubuntu Trusty without any extra packages installed takes around 400M of RAM
+from the mount in addition to RAM used by the processes it creates.
+
+However the RAM usage can be reduced by using overlayfs based snapshot cloning
+(copy on write)
+
+    lxci trusty-amd64 --snapshot --backingstore overlayfs
+
+This way RAM is used only when you write something to the disk in the
+container. Read operations will still hit the disk but it can be a good middle
+ground.
+
+Nice side effect of this is that the container creations becomes almost instant
+since nothing is copied.
+
+#### `tmpfs` vs. `ramfs`
+
+Read this http://www.jamescoyle.net/knowledge/951-the-difference-between-a-tmpfs-and-ramfs-ram-disk
+
+tl;dr `tmpfs` is a lot safer but `ramfs` can be faster since it does not use swap
+ever.
 
 
 ### Try it with Vagrant
@@ -116,9 +185,4 @@ It will create an Ubuntu 14.04.1 LTS (Trusty Tahr) virtual machine with Jenkins
 Not.
 
 http://www.slideshare.net/jpetazzo/is-it-safe-to-run-applications-in-linux-containers
-
-## todo
-
-- generate keys
-- disable pw
 
