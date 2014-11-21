@@ -141,7 +141,7 @@ To use it add
 
 or
 
-    none /var/lib/lxci/runtime tmpfs defaults 0 0
+    none /var/lib/lxci/runtime ramfs defaults 0 0
 
 
 to `/etc/fstab` and reload it in with `mount -a`.
