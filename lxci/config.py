@@ -17,7 +17,6 @@ if getpass.getuser() != "root":
 _home = os.environ.get("LXCI_HOME", _home)
 # ensure it exists
 os.makedirs(_home, exist_ok=True)
-print("home ix", _home) #XXX
 
 # default paths
 RUNTIME_CONFIG_PATH = "/var/lib/lxci/runtime"
@@ -40,12 +39,10 @@ VERBOSE = False
 
 # load customizations
 try:
-    print("reading", join(_home, "config"))
     with open(join(_home, "config"), "r") as _f:
         _parser = configparser.ConfigParser()
         _parser.read_string("[default]\n" + _f.read())
         for _key, _value in _parser["default"].items():
-            print(_key ,_value)
             globals()[_key.upper()] = _value
 except FileNotFoundError:
     pass
