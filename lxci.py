@@ -131,7 +131,10 @@ def main():
         die("Unknown base container {}".format(args.base_container))
 
     if args.name in lxci.list_runtime_containers():
-        die("Container name {} already exists".format(args.name))
+        die("Container name {} already exists in the runtime".format(args.name))
+
+    if args.name in lxci.list_archived_containers():
+        die("Container name {} already exists in the archive".format(args.name))
 
     runtime_container = lxci.create_runtime_container(
         args.base_container, args.name
