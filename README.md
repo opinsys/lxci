@@ -137,11 +137,11 @@ can be anything from small to epic speed up.
 
 To use it add
 
-    none                                           /var/lib/lxci/runtime    tmpfs   size=5g        0       0
+    none /var/lib/lxci/runtime tmpfs size=5g 0 0
 
 or
 
-    none                                           /var/lib/lxci/runtime    tmpfs   defaults        0       0
+    none /var/lib/lxci/runtime tmpfs defaults 0 0
 
 
 to `/etc/fstab` and reload it in with `mount -a`.
