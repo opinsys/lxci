@@ -47,7 +47,7 @@ To list all other options use `--help`
 ### Artifacts
 
 Place any files to `/home/lxci/results` in the container and they will be
-copied to `/var/lib/lxci-results/NAME` on the host. Where `NAME` is the name of
+copied to `/var/lib/lxci/results/NAME` on the host. Where `NAME` is the name of
 the temporary container. Set it with `--name`.
 
 ### Workflow with Continuous Integration Systems

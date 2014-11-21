@@ -3,8 +3,6 @@
 
 set -eu
 
-. test/lxci_test_config
-
 mkdir -p /tmp/lxci_test_dir/foo/bar
 
 export SUDO_UID=0

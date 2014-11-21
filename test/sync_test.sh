@@ -2,8 +2,6 @@
 
 set -eu
 
-. test/lxci_test_config
-
 mkdir -p "$HOME/tmp/workspace"
 echo hello > "$HOME/tmp/workspace/syncme"
 

@@ -14,14 +14,30 @@ print_help(){
 
 [ "${1:-}" = "--help" -o "${1:-}" = "-h" ] && print_help && exit 0
 
+export LXCI_HOME="/tmp/lxc-test"
 
-export LXCI_CONFIG=test/lxci_test_config
 export LXCI="./lxci.py"
 export BASE=trusty-amd64
 
+export RUNTIME_CONFIG_PATH="$LXCI_HOME/runtime"
+export ARCHIVE_CONFIG_PATH="$LXCI_HOME/archive"
+export RESULTS_PATH="$LXCI_HOME/results"
+
+
+before(){
+    rm -rf "$LXCI_HOME"
+    mkdir -p "$LXCI_HOME"
+    cat >"$LXCI_HOME/config"<<EOF
+RUNTIME_CONFIG_PATH=$RUNTIME_CONFIG_PATH
+ARCHIVE_CONFIG_PATH=$ARCHIVE_CONFIG_PATH
+RESULTS_PATH=$RESULTS_PATH
+VERBOSE=1
+EOF
+}
+
 run_test(){
     local test_file=$1
-    rm /tmp/lxci_test_* -rf
+    before
     echo -n "Running $test_file "
     chmod +x "$test_file"
     res="$($test_file 2>&1)"
@@ -33,7 +49,6 @@ run_test(){
         exit 1
     fi
 }
-
 
 if [ "${1:-}" = "" ]; then
     for test_file in test/*_test.sh

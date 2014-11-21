@@ -2,10 +2,7 @@
 
 set -eu
 
-. test/lxci_test_config
-
 $LXCI $BASE --archive-on-fail --name foo --command "exit 0"
-
 
 ls "$RUNTIME_CONFIG_PATH/foo" && {
     echo "Container was not destroyed"
