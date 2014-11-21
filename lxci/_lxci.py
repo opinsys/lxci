@@ -165,7 +165,18 @@ class RuntimeContainer():
 
 
     def get_rootfs_path(self):
-        return self.container.get_config_item("lxc.rootfs")
+        """
+        Get writable rootfs path on the host
+        """
+        rootfs =  self.container.get_config_item("lxc.rootfs")
+
+        if rootfs.startswith("overlayfs:"):
+            # if using overlayfs return the path for the writable top layer
+            return rootfs.split(":")[2]
+
+        # XXX I think we need similar parsing for aufs too
+
+        return rootfs
 
     def get_results_src_path(self):
         return self.get_path("/home/lxci/results")
@@ -251,6 +262,7 @@ class RuntimeContainer():
 
         prepare_sh_path = "/tmp/lxci-prepare.sh"
         prepare_sh_path_fullpath = self.get_path(prepare_sh_path)
+        os.makedirs(os.path.dirname(prepare_sh_path_fullpath), exist_ok=True)
 
         with open(prepare_sh_path_fullpath, "w") as f:
             f.write(prepare_header)
@@ -330,7 +342,8 @@ class RuntimeContainer():
                 os.makedirs(config.ARCHIVE_CONFIG_PATH, exist_ok=True)
                 archived_container = self.container.clone(
                     self.container.name,
-                    config_path=config.ARCHIVE_CONFIG_PATH
+                    config_path=config.ARCHIVE_CONFIG_PATH,
+                    bdevtype="dir"
                 )
                 assert_ret(archived_container, "Failed to archive the container")
                 assert_ret(self.container.destroy(), "Failed to destroy the runtime container after archiving")
@@ -360,7 +373,7 @@ class RuntimeContainer():
         with timer_print("Destroying container {}".format(self.get_name())):
             assert_ret(self.container.destroy())
 
-def create_runtime_container(base_container_name, runtime_container_name):
+def create_runtime_container(base_container_name, runtime_container_name, snapshot=False, backingstore="dir"):
     """
     Clone the base container and create lxci user for it
     """
@@ -368,12 +381,20 @@ def create_runtime_container(base_container_name, runtime_container_name):
     base_container = lxc.Container(base_container_name, config_path=config.BASE_CONFIG_PATH)
     os.makedirs(config.RUNTIME_CONFIG_PATH, exist_ok=True)
 
+    clone_kwargs = {
+        "flags": 0,
+        "config_path": config.RUNTIME_CONFIG_PATH
+    }
+
+    if snapshot:
+        clone_kwargs["flags"] = lxc.LXC_CLONE_SNAPSHOT
+
+    if backingstore:
+        clone_kwargs["bdevtype"] = backingstore
+
     container = None
-    with timer_print("Creating container '{runtime}' using '{base}'".format(runtime=runtime_container_name, base=base_container_name)):
-        container = base_container.clone(
-            runtime_container_name,
-            config_path=config.RUNTIME_CONFIG_PATH
-        )
+    with timer_print("Cloning container '{runtime}' using '{base}'".format(runtime=runtime_container_name, base=base_container_name)):
+        container = base_container.clone(runtime_container_name, **clone_kwargs)
         assert_ret(container, "Error while creating the runtime container")
 
     runtime_container =  RuntimeContainer(container)

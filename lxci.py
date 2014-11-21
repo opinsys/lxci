@@ -21,7 +21,7 @@ parser.add_argument("-c", "--command", metavar="COMMAND", default="bash", dest="
 parser.add_argument("-n", "--name",  metavar="NAME", dest="name", help="custom name for the temporary runtime container")
 parser.add_argument("-t", "--tag",  metavar="TAG", dest="tag", help="tag container with TAG")
 parser.add_argument("-s", "--sync",  metavar="DIR", dest="workspace_source_dir", help="synchronize DIR to the container. The trailing slash works like in rsync. If it is present the contents of the DIR is synchronized to the current working directory command. If not the directory itself is synchronized.")
-parser.add_argument("-A", "--archive", dest="archive", action="store_true", help="archive the container after running the command")
+parser.add_argument("-A", "--archive", dest="archive", action="store_true", help="archive the container after running the command. The archive is always created with a directory backing store")
 parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="store_true", help="archive the container only if the command returns with non zero exit status")
 parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="list archived containers. Combine --verbose to see tags and filter list with --tag TAG")
 parser.add_argument("-m", "--info", metavar="NAME", dest="info", help="display meta data of an archived container")
@@ -32,6 +32,8 @@ parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="c
 parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Example FOO=bar")
 parser.add_argument("--print-config", dest="print_config", action="store_true", help="print config")
 parser.add_argument("-S", "--sudo", dest="sudo", action="store_true", help="enable passwordless sudo in the container")
+parser.add_argument("-p", "--snapshot", dest="snapshot", action="store_true", help="clone base container as a snapshot. Makes the temporary container creation really fast if your host filesystem supports this")
+parser.add_argument("-B", "--backingstore", metavar="BACKINGSTORE", dest="backingstore", help="set custom backingstore for --snapshot. Works just like lxc-clone --backingstore")
 parser.add_argument("-V", "--version", dest="version", action="store_true", help="print lxci version")
 parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="be verbose")
 
@@ -137,7 +139,7 @@ def main():
         die("Container name {} already exists in the archive".format(args.name))
 
     runtime_container = lxci.create_runtime_container(
-        args.base_container, args.name
+        args.base_container, args.name, snapshot=args.snapshot, backingstore=args.backingstore
     )
     runtime_container.add_meta({
         "command": args.command,
@@ -161,9 +163,6 @@ def main():
                     SCRIPT_NAME=SCRIPT_NAME, name=runtime_container.get_name())
                 )
 
-    atexit.register(on_exit)
-
-
     if len(env) > 0:
         runtime_container.write_env(env)
 
@@ -175,6 +174,7 @@ def main():
         runtime_container.enable_sudo()
 
     runtime_container.start()
+    atexit.register(on_exit)
     runtime_container.add_meta({ "started": datetime.datetime.now().isoformat() })
     cmd = runtime_container.run_command(args.command)
     did_fail = cmd.returncode != 0
