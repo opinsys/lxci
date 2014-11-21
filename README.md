@@ -13,10 +13,9 @@ This will do following
 4. Logins as the `lxci` user over ssh and starts `bash`
 5. After the bash command exists the container is destroyed
 
-> Add `-v` to see details
+add `-v` to see details
 
-
-> <sup>1</sup> Create it with `sudo lxc-create -t download -n trusty-amd64 -- --dist ubuntu --release trusty --arch amd64` and install openssh-server into it
+<sup>1</sup> Create it with `sudo lxc-create -t download -n trusty-amd64 -- --dist ubuntu --release trusty --arch amd64` and install openssh-server into it
 
 
 To execute custom command instead of bash use `--command COMMAND`
@@ -82,7 +81,7 @@ build fails for later investigation
 `--destroy-archive-on-success` destroys the archived containers with matching
 tags when build succeeds. Automatic clean up!
 
-`--sync` sends the Jenkins project workspace in into the container
+`--sync .` copies the Jenkins project workspace in into the container
 
 `--command "sh ci.sh"` executes the actual build script which is versioned
 within the project
