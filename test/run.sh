@@ -16,7 +16,7 @@ print_help(){
 
 export LXCI_HOME="/tmp/lxc-test"
 
-export LXCI="./lxci.py"
+export LXCI="./lxci.py --snapshot"
 export BASE=trusty-amd64
 
 export RUNTIME_CONFIG_PATH="$LXCI_HOME/runtime"
