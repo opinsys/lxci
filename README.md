@@ -1,13 +1,14 @@
 
 # lxCI
 
-Run commands in temporary containers
+Run commands in full<sup>1</sup> temporary containers
 
     lxci trusty-amd64
 
 This will do following
 
-1. Creates a new temporary container based on the existing `trusty-amd64` container<sup>1</sup>
+1. Creates a new temporary container based on the existing `trusty-amd64`
+   container<sup>2</sup>
 2. Adds user `lxci` to it
 3. Boots and waits for the network and ssh server to wake up in it
 4. Logins as the `lxci` user over ssh and starts `bash`
@@ -15,30 +16,40 @@ This will do following
 
 add `-v` to see details
 
-<sup>1</sup> Create it with `sudo lxc-create -t download -n trusty-amd64 -- --dist ubuntu --release trusty --arch amd64` and install openssh-server into it
+<small>
 
+<sup>1</sup> Unlike Docker the container is started using the normal
+`/sbin/init` meaning all the installed daemons (ssh, cron, upstart etc.) in the
+base container will be started in as you would expect them to start in normal
+virtual machine.
+
+<sup>2</sup> Create it with `sudo lxc-create -t download -n trusty-amd64 --
+--dist ubuntu --release trusty --arch amd64` and install `openssh-server`
+package into it.
+
+</small>
 
 To execute custom command instead of bash use `--command COMMAND`
 
-    lxci trusty-amd64 --command hostname
+    $ lxci trusty-amd64 --command hostname
+    trusty-amd64-runtime-2014-11-22_11-32-03
 
 To copy files into the container workspace use `--sync PATH`
 
-    lxci trusty-amd64 --command "ls -l" --sync .
+    $ lxci trusty-amd64 --sync . --command "ls -l *.py"
+    -rwxrwxr-x 1 lxci lxci 8666 Nov 22 11:27 lxci.py
 
 To archive the container on failures add `--archive-on-fail`
 
-    lxci trusty-amd64 --command "exit 2" --archive-on-fail
+    $ lxci trusty-amd64 --command "exit 42" --archive-on-fail
+    Command failed in the container with exit status 42
+    You may inspect what went wrong with: [sudo] lxci --inspect trusty-amd64-runtime-2014-11-22_11-35-13
 
-The archived containers can be listed with `--list-archive`
+As noted the container can be inspected with `--inspect`. It will start bash in
+the archived container
 
-    lxci --list-archive
-
-To inspect an archived container use `--inspect NAME`
-
-    lxci --inspect NAME
-
-> This will start an interactive shell session in it
+    $ lxci --inspect trusty-amd64-runtime-2014-11-22_11-35-13
+    lxci@trusty-amd64-runtime-2014-11-22_11-35-13:~/workspace$
 
 To list all other options use `--help`
 
@@ -52,12 +63,12 @@ the temporary container. Set it with `--name`.
 
 ### Workflow with Continuous Integration Systems
 
-lxcCI works really well with Continuous Integration Systems such as Jenkins. We
-use it like this with the Jenkins "Execute shell" build
+lxCI works really well with Continuous Integration Systems such as Jenkins. We
+use it like this
 
 ```shell
 lxci --name "$JOB_NAME-$BUILD_NUMBER" \
-    --tag $JOB \
+    --tag $JOB_NAME \
     --archive-on-fail \
     --destroy-archive-on-success \
     --sync . \
