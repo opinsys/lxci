@@ -51,9 +51,8 @@ the archived container
     $ lxci --inspect trusty-amd64-runtime-2014-11-22_11-35-13
     lxci@trusty-amd64-runtime-2014-11-22_11-35-13:~/workspace$
 
-To list all other options use `--help`
+To list all other options use `--help`.
 
-    lxci --help
 
 ### Artifacts
 
