@@ -29,6 +29,8 @@ package into it.
 
 </small>
 
+## Basic usage
+
 To execute custom command instead of bash use `--command COMMAND`
 
     $ lxci trusty-amd64 --command hostname
@@ -157,15 +159,14 @@ or
 to `/etc/fstab` and reload it in with `mount -a`.
 
 This will if course require some RAM from the host machine. For example booting
-Ubuntu Trusty without any extra packages installed takes around 400M of RAM
-from the mount in addition to RAM used by the processes it creates.
+Ubuntu container without any extra packages installed takes around 400M of RAM
+from the mount in addition to RAM used by the processes it starts.
 
 However the RAM usage can be reduced by using overlayfs based snapshot cloning
-(copy on write)
 
     lxci trusty-amd64 --snapshot --backingstore overlayfs
 
-This way RAM is used only when you write something to the disk in the
+This way extra RAM is used only when you write something to the disk in the
 container. Read operations will still hit the disk but it can be a good middle
 ground.
 
