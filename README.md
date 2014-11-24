@@ -192,9 +192,31 @@ It will create an Ubuntu 14.04.1 LTS (Trusty Tahr) virtual machine with Jenkins
 
 ## Security
 
-Not.
+You should always assume that code running as root in the container can get
+root for the host too. Meaning if you do following
+
+    sudo lxci base --sudo --command "sudo gem install funnygem"
+
+You can assume that now the author of the `funnygem` has root access to your
+host machine.
+
+You should read this
 
 http://www.slideshare.net/jpetazzo/is-it-safe-to-run-applications-in-linux-containers
+
+### Unprivileged containers
+
+However lxCI supports unprivileged containers. When using unprivileged
+containers the root user of the container is mapped to a non-root user in the
+host which might be a bit safer. Maybe.
+
+Read here how to configure them
+
+https://help.ubuntu.com/lts/serverguide/lxc.html
+
+Here's some security background
+
+https://www.stgraber.org/2014/01/01/lxc-1-0-security-features/
 
 ## Options
 

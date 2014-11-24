@@ -10,6 +10,9 @@ import stat
 import subprocess
 import time
 import sys
+import tempfile
+import uuid
+
 
 from lxci import config
 
@@ -21,6 +24,16 @@ def verbose_message(*a, **kw):
     if config.VERBOSE:
         print(*a, file=sys.stderr, **kw)
         sys.stderr.flush()
+
+def container_exec(command):
+    """
+    Run command using lxc-usernsexec if the caller is not root
+    """
+    if os.getuid() == 0:
+        subprocess.check_call(command)
+    else:
+        subprocess.check_call(["lxc-usernsexec", "--"] + command)
+
 
 class timer_print():
     """
@@ -202,6 +215,7 @@ class RuntimeContainer():
         return len(os.listdir(self.get_results_src_path())) > 0
 
 
+
     def sync_workspace(self, source_dir):
 
         # sudo users can only sync files from their home directory
@@ -211,12 +225,30 @@ class RuntimeContainer():
                 raise RuntimeContainerError("Permission denied: sudo users can sync only their home directories")
 
         with timer_print("Synchronizing {} to the container".format(source_dir)):
-            subprocess.check_call([
+            container_exec([
                 "rsync",
                 "-a",
                 source_dir,
                 self.get_path("/home/lxci/workspace"),
             ])
+
+    def write_file(self, content, dest, executable=False):
+        tmp_file = None
+        f = None
+        try:
+            tmp_file = os.path.join(tempfile.gettempdir() + "/lxci-" + str(uuid.uuid4()))
+            f = open(tmp_file, "w")
+            f.write(content)
+            f.flush()
+            if executable:
+                make_executable(tmp_file)
+            self.copy_file(tmp_file, dest)
+        finally:
+            if f:
+                f.close()
+            if tmp_file:
+                os.remove(tmp_file)
+
 
     def run_command(self, command):
         """
@@ -226,14 +258,10 @@ class RuntimeContainer():
         if self.container.state == "STOPPED":
             raise RuntimeContainerError("Can run commands only in running containers")
 
-        command_filepath = self.get_path("/lxci/command.sh")
-
-        with open(command_filepath, "w") as f:
-            f.write(command_header)
-            f.write("\n")
-            f.write(command)
-
-        make_executable(command_filepath)
+        script = command_header
+        script += "\n"
+        script += command
+        self.write_file(script, "/lxci/command.sh", True)
 
         cmd = subprocess.Popen([
             "ssh",
@@ -263,22 +291,20 @@ class RuntimeContainer():
         if self.container.state != "STOPPED":
             raise RuntimeContainerError("Can only prepare stopped containers")
 
-        prepare_sh_path = "/tmp/lxci-prepare.sh"
-        prepare_sh_path_fullpath = self.get_path(prepare_sh_path)
-        os.makedirs(os.path.dirname(prepare_sh_path_fullpath), exist_ok=True)
+        prepare_sh_path = "/lxci/prepare.sh"
 
-        with open(prepare_sh_path_fullpath, "w") as f:
-            f.write(prepare_header)
-            f.write("\n")
-            for command in self._prepare_commands:
-                f.write(command)
-                f.write("\n")
+        script = prepare_header
+        script += "\n"
+        for command in self._prepare_commands:
+            script += command
+            script += "\n"
 
-        make_executable(prepare_sh_path_fullpath)
-        assert_ret(
-            self.container.start(useinit=False, daemonize=False, close_fds=False, cmd=(prepare_sh_path,)),
-            "Failed to prepare the container. Check {rootfs}/var/log/lxci-prepare.log".format(rootfs=self.get_rootfs_path())
-        )
+        with timer_print("Preparing container"):
+            self.write_file(script, prepare_sh_path, True)
+            assert_ret(
+                self.container.start(useinit=False, daemonize=False, close_fds=False, cmd=(prepare_sh_path,)),
+                "Failed to prepare the container. Check {rootfs}/var/log/lxci-prepare.log".format(rootfs=self.get_rootfs_path())
+            )
 
     def get_path(self, path):
         """
@@ -296,8 +322,7 @@ class RuntimeContainer():
 
         verbose_message("Enabling sudo for the lxci user")
         self.add_prepare_command("usermod -a -G sudo lxci")
-        with open(self.get_path("/etc/sudoers"), "a") as f:
-            f.write("%lxci ALL=(ALL) NOPASSWD: ALL\n")
+        self.add_prepare_command("echo '%lxci ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers")
 
     def get_meta_filepath(self):
         return self.get_path("/lxci/meta")
@@ -306,8 +331,8 @@ class RuntimeContainer():
         return os.path.exists(self.get_meta_filepath())
 
     def write_meta(self, meta):
-        with open(self.get_meta_filepath(), "w") as f:
-            json.dump(meta, f, sort_keys=True, indent=4)
+        data = json.dumps(meta, sort_keys=True, indent=4)
+        self.write_file(data, "/lxci/meta")
 
     def read_meta(self):
         """
@@ -353,6 +378,18 @@ class RuntimeContainer():
 
 
         return archived_container
+
+    def copy_file(self, src, dest):
+        """
+        Copy file into the container. src is a path in the host and dest a container path
+        """
+        container_exec(["cp", src, self.get_path(dest)])
+
+    def mkdirp(self, path):
+        """
+        Create directory into the container
+        """
+        container_exec(["mkdir", "-p", self.get_path(path)])
 
     def is_lxci_container(self):
         """
@@ -403,19 +440,16 @@ def create_runtime_container(base_container_name, runtime_container_name, snapsh
     runtime_container =  RuntimeContainer(container)
 
     # Create lxci directory
-    os.makedirs(runtime_container.get_path("/lxci"), exist_ok=True)
-    os.makedirs(runtime_container.get_path("/home/lxci/.ssh"))
-    os.makedirs(runtime_container.get_path("/home/lxci/results"))
-    os.makedirs(runtime_container.get_path("/home/lxci/workspace"))
+    runtime_container.mkdirp("/lxci")
+    runtime_container.mkdirp("/home/lxci/.ssh")
+    runtime_container.mkdirp("/home/lxci/results")
+    runtime_container.mkdirp("/home/lxci/workspace")
 
     runtime_container.add_prepare_command("adduser --system --uid 555 --shell /bin/bash --group lxci")
     # Ensure the user can read everything in home
     runtime_container.add_prepare_command("chown -R lxci:lxci /home/lxci")
 
-    shutil.copyfile(
-        config.SSH_PUB_KEY_PATH,
-        runtime_container.get_path("/home/lxci/.ssh/authorized_keys")
-    )
+    runtime_container.copy_file(config.SSH_PUB_KEY_PATH, "/home/lxci/.ssh/authorized_keys")
 
     runtime_container.add_meta({
         "base": base_container_name,
