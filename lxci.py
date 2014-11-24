@@ -26,7 +26,7 @@ parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="s
 parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="list archived containers. Combine --verbose to see tags and filter list with --tag TAG")
 parser.add_argument("-m", "--info", metavar="NAME", dest="info", help="display meta data of an archived container")
 parser.add_argument("-D", "--destroy-archive", dest="destroy_archive", action="store_true", help="destroy all archived containers. Combine with --tag TAG to destroy only the containers with the TAG")
-parser.add_argument("-d", "--destroy-archive-on-success", dest="destroy_on_ok", action="store_true", help="destroy archived containers on success. If --tag is set only the containers with matching tags will bee destroyed")
+parser.add_argument("-d", "--destroy-archive-on-success", dest="destroy_on_ok", action="store_true", help="destroy archived containers on success. If --tag is set only the containers with matching tags will be destroyed")
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="start bash in the archived container for inspection")
 parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="copy comma separated environment variables to the container")
 parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Example FOO=bar")
