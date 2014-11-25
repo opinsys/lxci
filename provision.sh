@@ -49,5 +49,5 @@ else
     make install
 fi
 
+echo "Unprivileged containers are now configured for the jenkins user. You must reboot the machine for it to take an effect. Type: vagrant reload"
 
-poweroff # Ensure jenkins user will have the namespace setup enabled
