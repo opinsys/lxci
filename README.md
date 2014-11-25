@@ -1,7 +1,9 @@
 
 # lxCI
 
-Run commands in full<sup>1</sup> temporary containers
+Run commands in full<sup>1</sup> temporary containers.
+
+Example
 
     lxci trusty-amd64
 
@@ -23,7 +25,7 @@ add `-v` to see details
 base container will be started in as you would expect them to start in normal
 virtual machine.
 
-<sup>2</sup> Create it with `sudo lxc-create -t download -n trusty-amd64 --
+<sup>2</sup> Create it with `lxc-create -t download -n trusty-amd64 --
 --dist ubuntu --release trusty --arch amd64` and install `openssh-server`
 package into it.
 
