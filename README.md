@@ -129,11 +129,30 @@ In `/etc/lxci/config`
 Default values are following
 
 ```
+## Path to the base containers. Defaults to defaults default lxc path
+BASE_CONFIG_PATH = /var/lib/lxc
+
+## Path where the temporary containers are created
 RUNTIME_CONFIG_PATH = /var/lib/lxci/runtime
+
+## Path where the containers are archived if requested
 ARCHIVE_CONFIG_PATH = /var/lib/lxci/archive
+
+## Path where the results (artifacts) are copied from the container
 RESULTS_PATH = /var/lib/lxci/results
 
+## Owner of the results file. Used only when lxci is executed as root.
+## Defaults to SUDO_USER if not specified
+# RESULTS_OWNER =
+
+## Group of the results file. Defaults to primary group of RESULTS_OWNER
+## if not specified.
+# RESULTS_GROUP =
+
+## SSH key used to login to the container. Created if missing
 SSH_KEY_PATH = /etc/lxci/key
+
+## Public key copied to the container
 SSH_PUB_KEY_PATH = /etc/lxci/key.pub
 ```
 
