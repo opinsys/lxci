@@ -4,6 +4,7 @@ import configparser
 import getpass
 import subprocess
 import sys
+import grp, pwd
 from os.path import join
 
 _dir = os.path.realpath(os.path.dirname(__file__))
@@ -22,6 +23,8 @@ os.makedirs(_home, exist_ok=True)
 RUNTIME_CONFIG_PATH = "/var/lib/lxci/runtime"
 ARCHIVE_CONFIG_PATH = "/var/lib/lxci/archive"
 RESULTS_PATH = "/var/lib/lxci/results"
+RESULTS_OWNER = os.environ.get("SUDO_USER", getpass.getuser())
+RESULTS_GROUP = None
 
 # non-root cannot write to the default paths
 if getpass.getuser() != "root":
@@ -48,6 +51,11 @@ except FileNotFoundError:
     pass
 
 VERBOSE = bool(VERBOSE)
+
+# If not specified default to primary group of the owner
+if not RESULTS_GROUP:
+    _res_gid = pwd.getpwnam(RESULTS_OWNER).pw_gid
+    RESULTS_GROUP = grp.getgrgid(_res_gid).gr_name
 
 with open(os.path.join(_dir, "VERSION"), "r") as _f:
     VERSION = _f.read().strip()

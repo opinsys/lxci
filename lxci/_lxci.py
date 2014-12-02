@@ -12,6 +12,7 @@ import time
 import sys
 import tempfile
 import uuid
+import getpass
 
 
 from lxci import config
@@ -210,6 +211,18 @@ class RuntimeContainer():
                 self.get_results_src_path(),
                 self.get_results_dest_path()
             )
+            if getpass.getuser() == "root":
+                subprocess.check_call([
+                    "chown", "-R",
+                    "{user}:{group}".format(
+                        user=config.RESULTS_OWNER,
+                        group=config.RESULTS_GROUP
+                    ),
+                    self.get_results_dest_path()
+                ])
+
+
+
 
     def has_results_files(self):
         return len(os.listdir(self.get_results_src_path())) > 0
