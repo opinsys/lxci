@@ -14,10 +14,12 @@ all:
 installdirs:
 	mkdir -p $(DESTDIR)$(PYTHON_PATH_DIR)
 	mkdir -p $(DESTDIR)$(bindir)
+	mkdir -p $(DESTDIR)/etc/lxci
 
 install: installdirs
 	cp -a lxci $(DESTDIR)$(PYTHON_PATH_DIR)
 	cp -a lxci.py $(DESTDIR)$(bindir)/lxci
+	cp -a config.default $(DESTDIR)/etc/lxci/config
 
 
 test:
