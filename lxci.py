@@ -70,7 +70,7 @@ def destroy_archive(args):
         c.destroy()
 
 def list_archive(args):
-    containers = lxci.list_archived_containers(return_object=True, tag=args.tag)
+    containers = lxci.list_archived_containers(return_object=True, tag_filter=args.tag)
 
     if (len(containers) == 0):
         verbose_message("Archive is empty")
@@ -83,7 +83,7 @@ def list_archive(args):
             print(c.get_name())
 
 def destroy_runtime(args):
-    for c in lxci.list_runtime_containers(return_object=True, tag=args.tag):
+    for c in lxci.list_runtime_containers(return_object=True, tag_filter=args.tag):
         c.destroy()
 
 def main():

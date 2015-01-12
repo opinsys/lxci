@@ -57,11 +57,11 @@ def list_runtime_containers(**kw):
 def list_archived_containers(**kw):
     return _list_containers(config.ARCHIVE_CONFIG_PATH, **kw)
 
-def _list_containers(config_path, return_object=False, tag=None):
+def _list_containers(config_path, return_object=False, tag_filter=None):
     containers = []
     for name in lxc.list_containers(config_path=config_path):
         container = RuntimeContainer(lxc.Container(name, config_path=config_path))
-        if tag and tag not in container.get_tags():
+        if tag_filter and tag_filter not in container.get_tags():
             continue
         if container.is_lxci_container():
             if return_object:
