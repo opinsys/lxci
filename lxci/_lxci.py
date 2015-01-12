@@ -274,9 +274,11 @@ class RuntimeContainer():
         script = command_header
         script += "\n"
         script += command
+        script += "\n"
+
         self.write_file(script, "/lxci/command.sh", True)
 
-        cmd = subprocess.Popen([
+        process_args = [
             "ssh",
             "-q", # Quiet mode
             "-t", # Force pseudo-tty allocation
@@ -285,9 +287,12 @@ class RuntimeContainer():
             "-l", "lxci", # Login as lxci user
             self.container.get_ips()[0],
             "/lxci/command.sh",
-            ], pass_fds=os.pipe()
-            # stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE
-        )
+        ]
+
+        verbose_message("Executing: {}".format(command))
+        verbose_message("With: {}".format(process_args))
+
+        cmd = subprocess.Popen(process_args, pass_fds=os.pipe())
         cmd.wait()
         return cmd
 
