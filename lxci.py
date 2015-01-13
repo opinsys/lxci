@@ -159,8 +159,7 @@ def main():
 
     if args.tag:
         for c in lxci.list_runtime_containers(return_object=True, tag_filter=args.tag):
-            error_message("Found a runtime container with the same tag: {}".format(c))
-            error_message("Destroying it")
+            error_message("Found a runtime container with the same tag: {}. Destroying it.".format(c.get_name()))
             c.destroy()
 
     runtime_container = lxci.create_runtime_container(
