@@ -30,7 +30,8 @@ parser.add_argument("-d", "--destroy-archive-on-success", dest="destroy_on_ok", 
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="start bash in the archived container for inspection")
 parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="copy comma separated environment variables to the container")
 parser.add_argument("-e", "--set-env", metavar="ENV", nargs="*", dest="set_env", help="Set environment variable for the container. Example FOO=bar")
-parser.add_argument("--print-config", dest="print_config", action="store_true", help="print config. Use 'eval $(lxci --print-config)' to load config to environment variables")
+parser.add_argument("--print-config", dest="print_config", action="store_true", help="print config")
+parser.add_argument("--print-env", dest="print_env", action="store_true", help="print config as environment variables with LXCI_ prefix. Use 'eval $(lxci --print-env)' to load the variables")
 parser.add_argument("-S", "--sudo", dest="sudo", action="store_true", help="enable passwordless sudo in the container")
 parser.add_argument("-p", "--snapshot", dest="snapshot", action="store_true", help="clone base container as a snapshot. Makes the temporary container creation really fast if your host filesystem supports this")
 parser.add_argument("-B", "--backingstore", metavar="BACKINGSTORE", dest="backingstore", help="set custom backingstore for --snapshot. Works just like lxc-clone --backingstore")
@@ -86,16 +87,24 @@ def destroy_runtime(args):
     for c in lxci.list_runtime_containers(return_object=True, tag_filter=args.tag):
         c.destroy()
 
+def print_config(prefix=""):
+    for key in dir(config):
+        if key.isupper():
+            print("{p}{k}=\"{v}\"".format(p=prefix, k=key, v=getattr(config, key)))
+
 def main():
     args = parser.parse_args()
     if args.verbose:
         config.VERBOSE = True
     env = {}
 
+
     if args.print_config:
-        for key in dir(config):
-            if key.isupper():
-                print("{k}=\"{v}\"".format(k=key, v=getattr(config, key)))
+        print_config()
+        return
+
+    if args.print_env:
+        print_config("LXCI_")
         return
 
     if args.version:
