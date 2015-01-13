@@ -6,6 +6,7 @@ import atexit
 import lxc
 import os
 import json
+import subprocess
 
 import lxci
 from lxci import config, error_message, verbose_message
@@ -18,6 +19,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("base_container", metavar="BASE_CONTAINER", nargs="?", help="base container to use. Use [sudo] lxc-ls to list available containers.")
 parser.add_argument("-c", "--command", metavar="COMMAND", default="bash", dest="command", help="shell command to be executed in the container. If set to - the command will be read from the stdin. DEFAULT: bash")
+parser.add_argument("-C", "--success-command", metavar="SUCCESS_COMMAND", dest="success_command", help="shell command to be executed on the host when the build succeeds (exit status 0). The command is executed before the container is destroyed.")
 parser.add_argument("-n", "--name",  metavar="NAME", dest="name", help="custom name for the temporary runtime container")
 parser.add_argument("-t", "--tag",  metavar="TAG", dest="tag", help="tag container with TAG")
 parser.add_argument("-s", "--sync",  metavar="DIR", dest="workspace_source_dir", help="synchronize DIR to the container. The trailing slash works like in rsync. If it is present the contents of the DIR is synchronized to the current working directory command. If not the directory itself is synchronized.")
@@ -209,6 +211,9 @@ def main():
 
     if not did_fail and runtime_container.has_results_files():
         runtime_container.copy_results()
+
+    if not did_fail and args.success_command:
+        subprocess.check_call(["sh", "-c", args.success_command])
 
     if not did_fail and args.destroy_on_ok:
         destroy_archive(args)
