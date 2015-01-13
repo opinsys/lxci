@@ -36,6 +36,28 @@ def container_exec(command):
         subprocess.check_call(["lxc-usernsexec", "--"] + command)
 
 
+def wait_for_ssh(address, timeout=10):
+    """
+    Wait for SSH server to wake up on address (tuple of host and port)
+    """
+    started = time.time()
+    while True:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            s.connect(address)
+            data = s.recv(5)
+            if b'SSH' in data:
+                break
+        except socket.error:
+            time.sleep(0.1)
+
+
+        if time.time() - started > timeout:
+              raise RuntimeContainerError("Timeout while waiting for container SSH server to wake up. Are you sure it is installed?")
+
+
+
 class timer_print():
     """
     Measure how long it takes to run the with block
@@ -157,16 +179,8 @@ class RuntimeContainer():
 
         ip = ips[0]
 
-        started = time.time()
         with timer_print("Waiting for the container SSH server to wake up"):
-            while True:
-                try:
-                    socket.create_connection((ip, 22)).close()
-                    break
-                except Exception:
-                    time.sleep(0.1)
-                if time.time() - started > 10:
-                    raise RuntimeContainerError("Timeout while waiting for container SSH server to wake up. Are you sure it is installed?")
+            wait_for_ssh((ip, 22))
 
     def write_env(self, env):
         """
