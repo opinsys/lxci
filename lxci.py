@@ -60,7 +60,7 @@ def info(args):
     print(json.dumps(c.read_meta(), sort_keys=True, indent=4))
 
 def destroy_archive(args):
-    containers = lxci.list_archived_containers(return_object=True, tag=args.tag)
+    containers = lxci.list_archived_containers(return_object=True, tag_filter=args.tag)
 
     if len(containers) == 0:
         verbose_message("No containers matched with tag {}. Check -lv".format(args.tag))
