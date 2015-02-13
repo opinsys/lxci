@@ -146,7 +146,7 @@ def main():
         die("BASE_CONTAINER not defined. See [sudo] lxc-ls")
 
     if not args.name:
-        args.name = args.base_container + "-runtime-" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        args.name = args.base_container + "-" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
     if not args.base_container in lxci.list_base_containers():
         die("Unknown base container {}".format(args.base_container))
