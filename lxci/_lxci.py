@@ -181,6 +181,7 @@ class RuntimeContainer():
 
         with timer_print("Waiting for the container SSH server to wake up"):
             wait_for_ssh((ip, 22))
+        time.sleep(1)
 
     def write_env(self, env):
         """
@@ -437,10 +438,12 @@ class RuntimeContainer():
             self.container.wait("STOPPED", 60)
 
     def destroy(self):
-        self.stop()
         if self.container.state != "STOPPED":
-            error_message("Cannot destroy container {} since it's not stopped".format(self.get_name()))
-            return
+            self.stop()
+            # XXX: When using --snapshot the overlayfs mount is not correctly
+            # umounted if we immediately try the destroy the container. Wait a
+            # sec for it to umount
+            time.sleep(1)
 
         with timer_print("Destroying container {}".format(self.get_name())):
             assert_ret(self.container.destroy())
