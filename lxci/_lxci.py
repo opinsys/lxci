@@ -446,7 +446,7 @@ class RuntimeContainer():
             time.sleep(1)
 
         with timer_print("Destroying container {}".format(self.get_name())):
-            assert_ret(self.container.destroy())
+            assert_ret(self.container.destroy(), "Failed to destroy the container")
 
 def create_runtime_container(base_container_name, runtime_container_name, snapshot=False, backingstore="dir"):
     """
