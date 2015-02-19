@@ -25,9 +25,8 @@ parser.add_argument("-t", "--tag",  metavar="TAG", dest="tag", help="tag contain
 parser.add_argument("-s", "--sync",  metavar="DIR", dest="workspace_source_dir", help="synchronize DIR to the container. The trailing slash works like in rsync. If it is present the contents of the DIR is synchronized to the current working directory command. If not the directory itself is synchronized.")
 parser.add_argument("-A", "--archive", dest="archive", action="store_true", help="archive the container after running the command. The archive is always created with a directory backing store")
 parser.add_argument("-a", "--archive-on-fail", dest="archive_on_fail", action="store_true", help="archive the container only if the command returns with non zero exit status")
-parser.add_argument("-l", "--list-archive", dest="list_archive", action="store_true", help="list archived containers. Combine --verbose to see tags and filter list with --tag TAG")
 parser.add_argument("-m", "--info", metavar="NAME", dest="info", help="display meta data of an archived container")
-parser.add_argument("-D", "--destroy-archive", dest="destroy_archive", action="store_true", help="destroy all archived containers. Combine with --tag TAG to destroy only the containers with the TAG")
+parser.add_argument("-D", "--destroy", metavar="STATE", dest="destroy_containers", help="destroy containers. STATE must be archive or runtime. Filter with --tag TAG")
 parser.add_argument("-d", "--destroy-archive-on-success", dest="destroy_on_ok", action="store_true", help="destroy archived containers on success. If --tag is set only the containers with matching tags will be destroyed")
 parser.add_argument("-i", "--inspect",  metavar="NAME", dest="inspect", help="start bash in the archived container for inspection")
 parser.add_argument("-E", "--copy-env",  metavar="ENV", dest="copy_env", help="copy comma separated environment variables to the container")
@@ -38,7 +37,8 @@ parser.add_argument("-S", "--sudo", dest="sudo", action="store_true", help="enab
 parser.add_argument("-p", "--snapshot", dest="snapshot", action="store_true", help="clone base container as a snapshot. Makes the temporary container creation really fast if your host filesystem supports this")
 parser.add_argument("-B", "--backingstore", metavar="BACKINGSTORE", dest="backingstore", help="set custom backingstore for --snapshot. Works just like lxc-clone --backingstore")
 parser.add_argument("-V", "--version", dest="version", action="store_true", help="print lxci version")
-parser.add_argument("--destroy-runtime", dest="destroy_runtime", action="store_true", help="stop and destroy all runtime containers")
+parser.add_argument("-l", "--list", metavar="STATE", dest="list_containers", help="list containers. STATE must be archive or runtime. Filter with --tag TAG")
+parser.add_argument("--stop", metavar="STATE", dest="stop_containers", help="stop containers. STATE must be archive or runtime. Filter with --tag TAG")
 parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="be verbose")
 
 
@@ -64,19 +64,48 @@ def info(args):
 
 def destroy_archive(args):
     containers = lxci.list_archived_containers(return_object=True, tag_filter=args.tag)
-
-    if len(containers) == 0:
-        verbose_message("No containers matched with tag {}. Check -lv".format(args.tag))
-        return
-
     for c in containers:
         c.destroy()
 
-def list_archive(args):
-    containers = lxci.list_archived_containers(return_object=True, tag_filter=args.tag)
+
+def list_containers_by_state(state, tag):
+    containers = []
+    if state == "archive":
+        containers = lxci.list_archived_containers(return_object=True, tag_filter=tag)
+    elif state == "runtime":
+        containers = lxci.list_runtime_containers(return_object=True, tag_filter=tag)
+    else:
+        die("Expected STATE to be archive or runtime")
+
+    return containers
 
     if (len(containers) == 0):
-        verbose_message("Archive is empty")
+        verbose_message("No matching containers")
+        return
+
+def stop_containers(args):
+    for c in list_containers_by_state(args.stop_containers, args.tag):
+        c.stop()
+
+def destroy_containers(args):
+    state = args.destroy_containers
+    containers = list_containers_by_state(state, args.tag)
+
+    if (len(containers) == 0):
+        verbose_message("No matching containers")
+        return
+
+    for c in containers:
+        if state == "runtime" and not c.is_stopped():
+            error_message("Cannot destroy running runtime container '{}'. Use --stop first".format(c.get_name()))
+        else:
+            c.destroy()
+
+def list_containers(args):
+    containers = list_containers_by_state(args.list_containers, args.tag)
+
+    if (len(containers) == 0):
+        verbose_message("No matching containers")
         return
 
     for c in containers:
@@ -85,9 +114,6 @@ def list_archive(args):
         else:
             print(c.get_name())
 
-def destroy_runtime(args):
-    for c in lxci.list_runtime_containers(return_object=True, tag_filter=args.tag):
-        c.destroy()
 
 def print_config(prefix=""):
     for key in dir(config):
@@ -116,17 +142,20 @@ def main():
     if args.command == "-":
         args.command = sys.stdin.read()
 
-    if args.list_archive:
-        return list_archive(args)
+    if args.list_containers:
+        return list_containers(args)
+
+    if args.stop_containers:
+        return stop_containers(args)
+
+    if args.destroy_containers:
+        return destroy_containers(args)
 
     if args.inspect:
         return inspect(args)
 
     if args.info:
         return info(args)
-
-    if args.destroy_runtime:
-        return destroy_runtime(args)
 
     if args.copy_env:
         env_keys = args.env.split(",")
@@ -139,8 +168,6 @@ def main():
             k, v = pair.split("=")
             env[k] = v
 
-    if args.destroy_archive:
-        return destroy_archive(args)
 
     if not args.base_container:
         die("BASE_CONTAINER not defined. See [sudo] lxc-ls")

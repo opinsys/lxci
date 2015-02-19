@@ -437,6 +437,9 @@ class RuntimeContainer():
             assert_ret(self.container.stop(), "Failed to stop the container")
             self.container.wait("STOPPED", 60)
 
+    def is_stopped(self):
+        return self.container.state == "STOPPED"
+
     def destroy(self):
         if self.container.state != "STOPPED":
             self.stop()
