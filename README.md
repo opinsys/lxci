@@ -261,6 +261,14 @@ https://www.stgraber.org/2014/01/01/lxc-1-0-security-features/
 ## Options
 
 ```
+usage: lxci [-h] [-c COMMAND] [-C SUCCESS_COMMAND] [-n NAME] [-t TAG] [-s DIR]
+            [-A] [-a] [-m NAME] [-D STATE] [-d] [-i NAME] [-E ENV]
+            [-e [ENV [ENV ...]]] [--print-config] [--env] [-S] [-p]
+            [-B BACKINGSTORE] [-V] [-l STATE] [--stop STATE] [-v]
+            [BASE_CONTAINER]
+
+lxCI - Run commands in temporary containers
+
 positional arguments:
   BASE_CONTAINER        base container to use. Use [sudo] lxc-ls to list
                         available containers.
@@ -271,6 +279,10 @@ optional arguments:
                         shell command to be executed in the container. If set
                         to - the command will be read from the stdin. DEFAULT:
                         bash
+  -C SUCCESS_COMMAND, --success-command SUCCESS_COMMAND
+                        shell command to be executed on the host when the
+                        build succeeds (exit status 0). The command is
+                        executed before the container is destroyed.
   -n NAME, --name NAME  custom name for the temporary runtime container
   -t TAG, --tag TAG     tag container with TAG
   -s DIR, --sync DIR    synchronize DIR to the container. The trailing slash
@@ -284,15 +296,13 @@ optional arguments:
   -a, --archive-on-fail
                         archive the container only if the command returns with
                         non zero exit status
-  -l, --list-archive    list archived containers. Combine --verbose to see
-                        tags and filter list with --tag TAG
   -m NAME, --info NAME  display meta data of an archived container
-  -D, --destroy-archive
-                        destroy all archived containers. Combine with --tag
-                        TAG to destroy only the containers with the TAG
+  -D STATE, --destroy STATE
+                        destroy containers. STATE must be archive or runtime.
+                        Filter with --tag TAG
   -d, --destroy-archive-on-success
                         destroy archived containers on success. If --tag is
-                        set only the containers with matching tags will bee
+                        set only the containers with matching tags will be
                         destroyed
   -i NAME, --inspect NAME
                         start bash in the archived container for inspection
@@ -303,6 +313,9 @@ optional arguments:
                         Set environment variable for the container. Example
                         FOO=bar
   --print-config        print config
+  --env                 print config as environment variables with LXCI_
+                        prefix. Use 'eval $(lxci --print-env)' to load the
+                        variables
   -S, --sudo            enable passwordless sudo in the container
   -p, --snapshot        clone base container as a snapshot. Makes the
                         temporary container creation really fast if your host
@@ -311,7 +324,11 @@ optional arguments:
                         set custom backingstore for --snapshot. Works just
                         like lxc-clone --backingstore
   -V, --version         print lxci version
-  --destroy-runtime     stop and destroy all runtime containers
+  -l STATE, --list STATE
+                        list containers. STATE must be archive or runtime.
+                        Filter with --tag TAG
+  --stop STATE          stop containers. STATE must be archive or runtime.
+                        Filter with --tag TAG
   -v, --verbose         be verbose
 
 Use environment variable LXCI_HOME to set custom path to configuration file
