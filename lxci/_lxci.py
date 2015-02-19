@@ -103,11 +103,11 @@ def make_executable(filepath):
 class RuntimeContainerError(Exception):
     "RuntimeContainer Error"
 
-def assert_ret(val, msg=""):
+def assert_ret(was_success, msg=""):
     """
     Raise RuntimeContainerError if the return value is not true
     """
-    if not val:
+    if not was_success:
         raise RuntimeContainerError(msg)
 
 prepare_header = """#!/bin/sh
@@ -443,13 +443,19 @@ class RuntimeContainer():
     def destroy(self):
         if self.container.state != "STOPPED":
             self.stop()
-            # XXX: When using --snapshot the overlayfs mount is not correctly
-            # umounted if we immediately try the destroy the container. Wait a
-            # sec for it to umount
-            time.sleep(1)
 
         with timer_print("Destroying container {}".format(self.get_name())):
-            assert_ret(self.container.destroy(), "Failed to destroy the container")
+            was_success = self.container.destroy()
+            if not was_success:
+                # XXX For unknown reason the container fails to be destroyed
+                # sometimes with following error:
+                #
+                #    lxc_container: utils.c: _recursive_rmdir_onedev: 99 _recursive_rmdir_onedev:
+                #
+                # So workaround it by retrying the destroy operation one
+                error_message("Failed to destroy the container. Retrying once in 5 seconds...")
+                time.sleep(5)
+                assert_ret(self.container.destroy(), "Failed to destroy the container")
 
 def create_runtime_container(base_container_name, runtime_container_name, snapshot=False, backingstore="dir"):
     """
