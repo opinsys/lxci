@@ -49,7 +49,7 @@ def die(*a):
 
 def inspect(args):
     if not args.inspect in lxci.list_archived_containers():
-        die("Unknown container {}. See --list-archive".format(args.inspect))
+        die("Unknown container {}. See lxci --list archive".format(args.inspect))
     container = lxci.RuntimeContainer(lxc.Container(args.inspect, config_path=config.ARCHIVE_CONFIG_PATH))
     container.start()
     cmd = container.run_command("bash")
@@ -58,7 +58,7 @@ def inspect(args):
 
 def info(args):
     if not args.info in lxci.list_archived_containers():
-        die("{} is not an archived container. See --list-archive".format(args.base_container))
+        die("{} is not an archived container. See lxci --list archive".format(args.base_container))
     c = lxci.RuntimeContainer(lxc.Container(args.info))
     print(json.dumps(c.read_meta(), sort_keys=True, indent=4))
 
